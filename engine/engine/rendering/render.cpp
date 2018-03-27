@@ -437,7 +437,7 @@ void CRender::Init()
 	InitShaders();
 
 	GTextRenderManager.Init();
-	GEnvironmentParticleManager.Init( 128, 2, 10.f );
+	GEnvironmentParticleManager.Init( /*128*/0, 2, 10.f );
 }
 
 void CRender::DrawRenderData( ID3D12GraphicsCommandList* commandList, TArray< SCommonRenderData > const& renderData )

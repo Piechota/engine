@@ -55,24 +55,28 @@ void CEnvironmentParticleManager::AllocateBuffers()
 	if ( m_particlesGPU )
 	{
 		m_particlesGPU->Release();
+		m_particlesGPU = nullptr;
 	}
 
-	ID3D12Device* const device = GRender.GetDevice();
+	if ( m_particlesNum )
+	{
+		ID3D12Device* const device = GRender.GetDevice();
 
-	D3D12_RESOURCE_DESC particleResDesc = {};
-	particleResDesc.Dimension = D3D12_RESOURCE_DIMENSION::D3D12_RESOURCE_DIMENSION_BUFFER;
-	particleResDesc.Width = m_particlesNum * 10 * sizeof( float ); //position + velocity
-	particleResDesc.Height = 1;
-	particleResDesc.DepthOrArraySize = 1;
-	particleResDesc.MipLevels = 1;
-	particleResDesc.Format = DXGI_FORMAT_UNKNOWN;
-	particleResDesc.SampleDesc.Count = 1;
-	particleResDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-	particleResDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+		D3D12_RESOURCE_DESC particleResDesc = {};
+		particleResDesc.Dimension = D3D12_RESOURCE_DIMENSION::D3D12_RESOURCE_DIMENSION_BUFFER;
+		particleResDesc.Width = m_particlesNum * 10 * sizeof( float ); //position + velocity
+		particleResDesc.Height = 1;
+		particleResDesc.DepthOrArraySize = 1;
+		particleResDesc.MipLevels = 1;
+		particleResDesc.Format = DXGI_FORMAT_UNKNOWN;
+		particleResDesc.SampleDesc.Count = 1;
+		particleResDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+		particleResDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 
-	CheckResult( device->CreateCommittedResource( &GHeapPropertiesGPUOnly, D3D12_HEAP_FLAG_NONE, &particleResDesc, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, nullptr, IID_PPV_ARGS( &m_particlesGPU ) ) );
+		CheckResult( device->CreateCommittedResource( &GHeapPropertiesGPUOnly, D3D12_HEAP_FLAG_NONE, &particleResDesc, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, nullptr, IID_PPV_ARGS( &m_particlesGPU ) ) );
 
-	m_particlesGPU->SetName( L"Environment Particle Buffer" );
+		m_particlesGPU->SetName( L"Environment Particle Buffer" );
+	}
 }
 
 void CEnvironmentParticleManager::InitParticles(UINT const initParticleNum, UINT const boxesNum, float const boxesSize)
@@ -101,77 +105,79 @@ void CEnvironmentParticleManager::InitParticles(UINT const initParticleNum, UINT
 	m_boxMatrix.m_a22 = m_boxesSize;
 
 	AllocateBuffers();
-
-	struct CBuffer
+	if ( m_particlesNum )
 	{
-		float m_velocity[ 3 ];
-		float m_padding;
-		float m_initSize[ 2 ];
-		float m_sizeRand[ 2 ];
-		float m_velocityOffsetRand[ 2 ];
-		float m_speedRand[ 2 ];
-		float m_tileSize[ 2 ];
-		UINT m_tileNum[ 2 ];
-		UINT m_seed;
-		UINT m_particleNum;
-	} cbuffer;
+		struct CBuffer
+		{
+			float m_velocity[ 3 ];
+			float m_padding;
+			float m_initSize[ 2 ];
+			float m_sizeRand[ 2 ];
+			float m_velocityOffsetRand[ 2 ];
+			float m_speedRand[ 2 ];
+			float m_tileSize[ 2 ];
+			UINT m_tileNum[ 2 ];
+			UINT m_seed;
+			UINT m_particleNum;
+		} cbuffer;
 
-	//RAIN
-	//cbuffer.m_velocity[ 0 ] = 4.f;
-	//cbuffer.m_velocity[ 1 ] = -3.f;
-	//cbuffer.m_velocity[ 2 ] = 1.f;
-	//cbuffer.m_initSize[ 0 ] = .5f;
-	//cbuffer.m_initSize[ 1 ] = 8.f;
-	//cbuffer.m_sizeRand[ 0 ] = 0.005f;
-	//cbuffer.m_sizeRand[ 1 ] = 0.01f;
-	//cbuffer.m_velocityOffsetRand[ 0 ] = -.2f;
-	//cbuffer.m_velocityOffsetRand[ 1 ] = .2f;
-	//cbuffer.m_speedRand[ 0 ] = 2.f;
-	//cbuffer.m_speedRand[ 1 ] = 3.f;
-	//cbuffer.m_tileSize[ 0 ] = 1.f;
-	//cbuffer.m_tileSize[ 1 ] = 1.f;
-	//cbuffer.m_tileNum[ 0 ] = 1;
-	//cbuffer.m_tileNum[ 1 ] = 1;
-	//SNOW
-	cbuffer.m_velocity[ 0 ] = 2.f;
-	cbuffer.m_velocity[ 1 ] = -3.f;
-	cbuffer.m_velocity[ 2 ] = 1.f;
-	cbuffer.m_initSize[ 0 ] = 1.f;
-	cbuffer.m_initSize[ 1 ] = 1.f;
-	cbuffer.m_sizeRand[ 0 ] = 0.02f;
-	cbuffer.m_sizeRand[ 1 ] = 0.04f;
-	cbuffer.m_velocityOffsetRand[ 0 ] = -.4f;
-	cbuffer.m_velocityOffsetRand[ 1 ] = .4f;
-	cbuffer.m_speedRand[ 0 ] = .1f;
-	cbuffer.m_speedRand[ 1 ] = .2f;
-	cbuffer.m_tileSize[ 0 ] = 1.f / 4.f;
-	cbuffer.m_tileSize[ 1 ] = 1.f / 4.f;
-	cbuffer.m_tileNum[ 0 ] = 4;
-	cbuffer.m_tileNum[ 1 ] = 4;
+		//RAIN
+		//cbuffer.m_velocity[ 0 ] = 4.f;
+		//cbuffer.m_velocity[ 1 ] = -3.f;
+		//cbuffer.m_velocity[ 2 ] = 1.f;
+		//cbuffer.m_initSize[ 0 ] = .5f;
+		//cbuffer.m_initSize[ 1 ] = 8.f;
+		//cbuffer.m_sizeRand[ 0 ] = 0.005f;
+		//cbuffer.m_sizeRand[ 1 ] = 0.01f;
+		//cbuffer.m_velocityOffsetRand[ 0 ] = -.2f;
+		//cbuffer.m_velocityOffsetRand[ 1 ] = .2f;
+		//cbuffer.m_speedRand[ 0 ] = 2.f;
+		//cbuffer.m_speedRand[ 1 ] = 3.f;
+		//cbuffer.m_tileSize[ 0 ] = 1.f;
+		//cbuffer.m_tileSize[ 1 ] = 1.f;
+		//cbuffer.m_tileNum[ 0 ] = 1;
+		//cbuffer.m_tileNum[ 1 ] = 1;
+		//SNOW
+		cbuffer.m_velocity[ 0 ] = 2.f;
+		cbuffer.m_velocity[ 1 ] = -3.f;
+		cbuffer.m_velocity[ 2 ] = 1.f;
+		cbuffer.m_initSize[ 0 ] = 1.f;
+		cbuffer.m_initSize[ 1 ] = 1.f;
+		cbuffer.m_sizeRand[ 0 ] = 0.02f;
+		cbuffer.m_sizeRand[ 1 ] = 0.04f;
+		cbuffer.m_velocityOffsetRand[ 0 ] = -.4f;
+		cbuffer.m_velocityOffsetRand[ 1 ] = .4f;
+		cbuffer.m_speedRand[ 0 ] = .1f;
+		cbuffer.m_speedRand[ 1 ] = .2f;
+		cbuffer.m_tileSize[ 0 ] = 1.f / 4.f;
+		cbuffer.m_tileSize[ 1 ] = 1.f / 4.f;
+		cbuffer.m_tileNum[ 0 ] = 4;
+		cbuffer.m_tileNum[ 1 ] = 4;
 
-	cbuffer.m_seed = rand();
-	cbuffer.m_particleNum = m_particlesNum;
-	( ( Vec3* )( &cbuffer.m_velocity[ 0 ] ) )->Normalize();
-	Vec3 const forward = *( ( Vec3* )( &cbuffer.m_velocity[ 0 ] ) );
-	
-	InitProjectionMatrix( forward, boxesNum );
+		cbuffer.m_seed = rand();
+		cbuffer.m_particleNum = m_particlesNum;
+		( ( Vec3* )( &cbuffer.m_velocity[ 0 ] ) )->Normalize();
+		Vec3 const forward = *( ( Vec3* )( &cbuffer.m_velocity[ 0 ] ) );
 
-	D3D12_GPU_VIRTUAL_ADDRESS constBufferAddress;
-	GRender.SetConstBuffer( constBufferAddress, (Byte*)&cbuffer, sizeof( cbuffer ) );
+		InitProjectionMatrix( forward, boxesNum );
 
-	m_particleCA->Reset();
-	m_particleCL->Reset( m_particleCA, m_particleShaderInit.GetPSO() );
-	
-	m_particleCL->SetComputeRootSignature( m_particleRS );
-	m_particleCL->SetComputeRootConstantBufferView( 1, constBufferAddress );
-	m_particleCL->SetComputeRootUnorderedAccessView( 2, m_particlesGPU->GetGPUVirtualAddress() );
-	
-	m_particleCL->Dispatch( ( m_particlesNum + 63 ) & ~63, 1, 1 );
-	
-	m_particleCL->Close();
-	
-	GRender.ExecuteComputeQueue( 1, (ID3D12CommandList* const*)(&m_particleCL) );
-	GRender.WaitForComputeQueue();
+		D3D12_GPU_VIRTUAL_ADDRESS constBufferAddress;
+		GRender.SetConstBuffer( constBufferAddress, ( Byte* )&cbuffer, sizeof( cbuffer ) );
+
+		m_particleCA->Reset();
+		m_particleCL->Reset( m_particleCA, m_particleShaderInit.GetPSO() );
+
+		m_particleCL->SetComputeRootSignature( m_particleRS );
+		m_particleCL->SetComputeRootConstantBufferView( 1, constBufferAddress );
+		m_particleCL->SetComputeRootUnorderedAccessView( 2, m_particlesGPU->GetGPUVirtualAddress() );
+
+		m_particleCL->Dispatch( ( m_particlesNum + 63 ) & ~63, 1, 1 );
+
+		m_particleCL->Close();
+
+		GRender.ExecuteComputeQueue( 1, ( ID3D12CommandList* const* )( &m_particleCL ) );
+		GRender.WaitForComputeQueue();
+	}
 }
 
 void CEnvironmentParticleManager::InitProjectionMatrix( Vec3 const forward, UINT const boxesNum )
@@ -220,35 +226,41 @@ void CEnvironmentParticleManager::InitProjectionMatrix( Vec3 const forward, UINT
 
 void CEnvironmentParticleManager::FillRenderData()
 {
-	m_renderData.m_texturesOffset = GRender.GetTexturesOffset();
-	m_renderData.m_texturesNum = 1;
-	//GRender.AddTextureID( T_RAIN_DROP );
-	GRender.AddTextureID( T_SNOW );
-	//Vec2 const uvScale( 1.f, 1.f );
+	if ( m_particlesNum )
+	{
+		m_renderData.m_texturesOffset = GRender.GetTexturesOffset();
+		m_renderData.m_texturesNum = 1;
+		//GRender.AddTextureID( T_RAIN_DROP );
+		GRender.AddTextureID( T_SNOW );
+		//Vec2 const uvScale( 1.f, 1.f );
 
-	Vec3 const cameraPosition = GComponentCameraManager.GetMainCameraPosition();
-	Vec3 const cameraForward = GComponentCameraManager.GetMainCameraForward();
-	Vec3 const startPosition = Math::Snap( cameraPosition + cameraForward * m_positionOffset, m_boxesSize ) - m_boxCenterOffset;
-	Vec3 const boxesMin = startPosition + m_boxCenterOffset - m_size;
-	Matrix4x4 tObjectToWorld = m_boxMatrix;
-	tObjectToWorld.m_w = boxesMin;
-	tObjectToWorld.Transpose();
+		Vec3 const cameraPosition = GComponentCameraManager.GetMainCameraPosition();
+		Vec3 const cameraForward = GComponentCameraManager.GetMainCameraForward();
+		Vec3 const startPosition = Math::Snap( cameraPosition + cameraForward * m_positionOffset, m_boxesSize ) - m_boxCenterOffset;
+		Vec3 const boxesMin = startPosition + m_boxCenterOffset - m_size;
+		Matrix4x4 tObjectToWorld = m_boxMatrix;
+		tObjectToWorld.m_w = boxesMin;
+		tObjectToWorld.Transpose();
 
-	Vec2 const uvScale( 1.f / 4.f, 1.f / 4.f );
-	float const softFactor = 0.5f;
-	CConstBufferCtx const cbCtx = GRender.GetConstBufferCtx( m_renderData.m_cbOffset, m_renderData.m_shaderID );
-	cbCtx.SetParam( &tObjectToWorld,		3 * sizeof( Vec4 ),				EShaderParameters::ObjectToWorld );
-	cbCtx.SetParam( &uvScale,				sizeof( uvScale ),				EShaderParameters::UVScale );
-	cbCtx.SetParam( &m_fade,				sizeof( m_fade ),				EShaderParameters::Fade );
-	cbCtx.SetParam( &m_boxesNum,			sizeof( m_boxesNum ),			EShaderParameters::BoxesNum );
-	cbCtx.SetParam( &m_boxesSize,			sizeof( m_boxesSize ),			EShaderParameters::Size );
-	cbCtx.SetParam( &softFactor,			sizeof( softFactor ),			EShaderParameters::Soft );
+		Vec2 const uvScale( 1.f / 4.f, 1.f / 4.f );
+		float const softFactor = 0.5f;
+		CConstBufferCtx const cbCtx = GRender.GetConstBufferCtx( m_renderData.m_cbOffset, m_renderData.m_shaderID );
+		cbCtx.SetParam( &tObjectToWorld, 3 * sizeof( Vec4 ), EShaderParameters::ObjectToWorld );
+		cbCtx.SetParam( &uvScale, sizeof( uvScale ), EShaderParameters::UVScale );
+		cbCtx.SetParam( &m_fade, sizeof( m_fade ), EShaderParameters::Fade );
+		cbCtx.SetParam( &m_boxesNum, sizeof( m_boxesNum ), EShaderParameters::BoxesNum );
+		cbCtx.SetParam( &m_boxesSize, sizeof( m_boxesSize ), EShaderParameters::Size );
+		cbCtx.SetParam( &softFactor, sizeof( softFactor ), EShaderParameters::Soft );
 
-	GRender.AddCommonRenderData( m_renderData, ERenderLayer::RL_TRANSLUCENT );
+		GRender.AddCommonRenderData( m_renderData, ERenderLayer::RL_TRANSLUCENT );
+	}
 }
 void CEnvironmentParticleManager::Release()
 {
-	m_particlesGPU->Release();
+	if ( m_particlesGPU )
+	{
+		m_particlesGPU->Release();
+	}
 
 	m_particleCA->Release();
 	m_particleCL->Release();
@@ -259,7 +271,7 @@ void CEnvironmentParticleManager::Release()
 
 D3D12_GPU_VIRTUAL_ADDRESS CEnvironmentParticleManager::GetParticlesBufferAddress() const
 {
-	return m_particlesGPU->GetGPUVirtualAddress();
+	return m_particlesGPU ? m_particlesGPU->GetGPUVirtualAddress() : 0;
 }
 
 CEnvironmentParticleManager GEnvironmentParticleManager;
