@@ -6,6 +6,9 @@
 *.lo
 *.o
 *.obj
+*.iobj
+*.pdb
+*.ipdb
 
 # Precompiled Headers
 *.gch
@@ -30,3 +33,9 @@
 *.exe
 *.out
 *.app
+
+# Folders
+*/.vs/
+*/bin/Desktop_2017_Win10/
+*/engine/x64/
+*/DirectXTex/Bin/
