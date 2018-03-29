@@ -126,19 +126,19 @@ void CRender::InitRenderTargets()
 
 	gbufferViewDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	gbufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	m_globalBufferDescriptorsOffsets[ GBB_DIFFUSE ].m_rtvOffset = rtvID;
-	CheckResult( m_device->CreateCommittedResource( &GHeapPropertiesGPUOnly, D3D12_HEAP_FLAG_NONE, &gbufferDesc, D3D12_RESOURCE_STATE_RENDER_TARGET, &gbufferClearValue, IID_PPV_ARGS( &m_globalBufferBuffers[ GBB_DIFFUSE ] ) ) );
-	m_device->CreateRenderTargetView( m_globalBufferBuffers[ GBB_DIFFUSE ], &gbufferViewDesc, m_renderTargetDH.GetCPUDescriptor(rtvID) );
-	m_globalBufferBuffers[ GBB_DIFFUSE ]->SetName( L"GBufferDiffuse" );
+	m_globalBufferDescriptorsOffsets[ GBB_DIFFUSE_METALNESS ].m_rtvOffset = rtvID;
+	CheckResult( m_device->CreateCommittedResource( &GHeapPropertiesGPUOnly, D3D12_HEAP_FLAG_NONE, &gbufferDesc, D3D12_RESOURCE_STATE_RENDER_TARGET, &gbufferClearValue, IID_PPV_ARGS( &m_globalBufferBuffers[ GBB_DIFFUSE_METALNESS ] ) ) );
+	m_device->CreateRenderTargetView( m_globalBufferBuffers[ GBB_DIFFUSE_METALNESS ], &gbufferViewDesc, m_renderTargetDH.GetCPUDescriptor(rtvID) );
+	m_globalBufferBuffers[ GBB_DIFFUSE_METALNESS ]->SetName( L"GBufferDiffuse" );
 	++rtvID;
 
-	gbufferClearValue.Format = DXGI_FORMAT_R10G10B10A2_UNORM;
-	gbufferViewDesc.Format = DXGI_FORMAT_R10G10B10A2_UNORM;
-	gbufferDesc.Format = DXGI_FORMAT_R10G10B10A2_UNORM;
-	m_globalBufferDescriptorsOffsets[ GBB_NORMAL ].m_rtvOffset = rtvID;
-	CheckResult( m_device->CreateCommittedResource( &GHeapPropertiesGPUOnly, D3D12_HEAP_FLAG_NONE, &gbufferDesc, D3D12_RESOURCE_STATE_RENDER_TARGET, &gbufferClearValue, IID_PPV_ARGS( &m_globalBufferBuffers[ GBB_NORMAL ] ) ) );
-	m_device->CreateRenderTargetView( m_globalBufferBuffers[ GBB_NORMAL ], &gbufferViewDesc, m_renderTargetDH.GetCPUDescriptor(rtvID) );
-	m_globalBufferBuffers[ GBB_NORMAL ]->SetName( L"GBufferNormal" );
+	gbufferClearValue.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	gbufferViewDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	gbufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	m_globalBufferDescriptorsOffsets[ GBB_NORMAL_ROUGHNESS ].m_rtvOffset = rtvID;
+	CheckResult( m_device->CreateCommittedResource( &GHeapPropertiesGPUOnly, D3D12_HEAP_FLAG_NONE, &gbufferDesc, D3D12_RESOURCE_STATE_RENDER_TARGET, &gbufferClearValue, IID_PPV_ARGS( &m_globalBufferBuffers[ GBB_NORMAL_ROUGHNESS ] ) ) );
+	m_device->CreateRenderTargetView( m_globalBufferBuffers[ GBB_NORMAL_ROUGHNESS ], &gbufferViewDesc, m_renderTargetDH.GetCPUDescriptor(rtvID) );
+	m_globalBufferBuffers[ GBB_NORMAL_ROUGHNESS ]->SetName( L"GBufferNormal" );
 	++rtvID;
 
 	gbufferClearValue.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -339,7 +339,7 @@ void CRender::InitRootSignatures()
 
 void CRender::InitShaders()
 {
-	DXGI_FORMAT const objectDrawRenderTargets[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R10G10B10A2_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM };
+	DXGI_FORMAT const objectDrawRenderTargets[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM };
 	ERenderTargetBlendStates const objectDrawRenderTargetsBlend[] = { ERTBS_Disabled, ERTBS_Disabled, ERTBS_Disabled };
 	m_shaders[ ST_OBJECT_DRAW ].InitShader( L"../shaders/objectDraw.hlsl", SSimpleObjectVertexFormat::desc, SSimpleObjectVertexFormat::descNum, 3, objectDrawRenderTargets, objectDrawRenderTargetsBlend, DXGI_FORMAT_D24_UNORM_S8_UINT, EDSS_DepthEnable );
 
@@ -522,8 +522,8 @@ void CRender::DrawRenderData( ID3D12GraphicsCommandList* commandList, TArray< SC
 
 void CRender::DrawLights( ID3D12GraphicsCommandList * commandList )
 {
-	commandList->SetGraphicsRootDescriptorTable( 3, m_texturesDH.GetGPUDescriptor( m_globalBufferDescriptorsOffsets[ GBB_DIFFUSE ].m_srvOffset ) );
-	commandList->SetGraphicsRootDescriptorTable( 4, m_texturesDH.GetGPUDescriptor( m_globalBufferDescriptorsOffsets[ GBB_NORMAL ].m_srvOffset ) );
+	commandList->SetGraphicsRootDescriptorTable( 3, m_texturesDH.GetGPUDescriptor( m_globalBufferDescriptorsOffsets[ GBB_DIFFUSE_METALNESS ].m_srvOffset ) );
+	commandList->SetGraphicsRootDescriptorTable( 4, m_texturesDH.GetGPUDescriptor( m_globalBufferDescriptorsOffsets[ GBB_NORMAL_ROUGHNESS ].m_srvOffset ) );
 	commandList->SetGraphicsRootDescriptorTable( 5, m_texturesDH.GetGPUDescriptor( m_globalBufferDescriptorsOffsets[ GBB_EMISSIVE_SPEC ].m_srvOffset ) );
 	commandList->SetGraphicsRootDescriptorTable( 6, m_texturesDH.GetGPUDescriptor( m_globalBufferDescriptorsOffsets[ GBB_DEPTH ].m_srvOffset ) );
 
@@ -729,14 +729,14 @@ void CRender::DrawFrame()
 
 	barriers[1].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 	barriers[1].Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-	barriers[1].Transition.pResource = m_globalBufferBuffers[ GBB_DIFFUSE ];
+	barriers[1].Transition.pResource = m_globalBufferBuffers[ GBB_DIFFUSE_METALNESS ];
 	barriers[1].Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
 	barriers[1].Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
 	barriers[1].Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 
 	barriers[2].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 	barriers[2].Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-	barriers[2].Transition.pResource = m_globalBufferBuffers[ GBB_NORMAL ];
+	barriers[2].Transition.pResource = m_globalBufferBuffers[ GBB_NORMAL_ROUGHNESS ];
 	barriers[2].Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
 	barriers[2].Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
 	barriers[2].Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
@@ -767,13 +767,13 @@ void CRender::DrawFrame()
 	commandList->RSSetScissorRects(1, &m_scissorRect);
 	commandList->RSSetViewports(1, &m_viewport);
 
-	D3D12_CPU_DESCRIPTOR_HANDLE renderTargetDH = m_renderTargetDH.GetCPUDescriptor( m_globalBufferDescriptorsOffsets[ GBB_DIFFUSE ].m_rtvOffset );
+	D3D12_CPU_DESCRIPTOR_HANDLE renderTargetDH = m_renderTargetDH.GetCPUDescriptor( m_globalBufferDescriptorsOffsets[ GBB_DIFFUSE_METALNESS ].m_rtvOffset );
 	D3D12_CPU_DESCRIPTOR_HANDLE depthBufferDH = m_depthBuffertDH.GetCPUDescriptor( 0 );
 	commandList->OMSetRenderTargets(3, &renderTargetDH, true, &depthBufferDH);
 
 	commandList->ClearDepthStencilView( depthBufferDH, D3D12_CLEAR_FLAG_DEPTH, 1.f, 0, 0, nullptr );
 	commandList->ClearRenderTargetView( renderTargetDH, Vec4::ZERO.data, 0, nullptr );
-	commandList->ClearRenderTargetView( m_renderTargetDH.GetCPUDescriptor( m_globalBufferDescriptorsOffsets[ GBB_NORMAL ].m_rtvOffset), Vec4::ZERO.data, 0, nullptr );
+	commandList->ClearRenderTargetView( m_renderTargetDH.GetCPUDescriptor( m_globalBufferDescriptorsOffsets[ GBB_NORMAL_ROUGHNESS ].m_rtvOffset), Vec4::ZERO.data, 0, nullptr );
 	commandList->ClearRenderTargetView( m_renderTargetDH.GetCPUDescriptor( m_globalBufferDescriptorsOffsets[ GBB_EMISSIVE_SPEC ].m_rtvOffset), Vec4::ZERO.data, 0, nullptr );
 
 	DrawRenderData( commandList, m_commonRenderData[RL_OPAQUE] );
@@ -1017,13 +1017,13 @@ void CRender::BeginLoadResources(unsigned int const textureNum)
 	srvDesc.Texture2D.MipLevels = 1;
 	srvDesc.Texture2D.MostDetailedMip = 0;
 
-	m_globalBufferDescriptorsOffsets[ GBB_DIFFUSE ].m_srvOffset = textureNum + GBB_DIFFUSE;
+	m_globalBufferDescriptorsOffsets[ GBB_DIFFUSE_METALNESS ].m_srvOffset = textureNum + GBB_DIFFUSE_METALNESS;
 	srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	m_device->CreateShaderResourceView(m_globalBufferBuffers[ GBB_DIFFUSE ], &srvDesc, m_texturesDH.GetCPUDescriptor(m_globalBufferDescriptorsOffsets[ GBB_DIFFUSE ].m_srvOffset) );
+	m_device->CreateShaderResourceView(m_globalBufferBuffers[ GBB_DIFFUSE_METALNESS ], &srvDesc, m_texturesDH.GetCPUDescriptor(m_globalBufferDescriptorsOffsets[ GBB_DIFFUSE_METALNESS ].m_srvOffset) );
 
-	m_globalBufferDescriptorsOffsets[ GBB_NORMAL ].m_srvOffset = textureNum + GBB_NORMAL;
-	srvDesc.Format = DXGI_FORMAT_R10G10B10A2_UNORM;
-	m_device->CreateShaderResourceView(m_globalBufferBuffers[ GBB_NORMAL ], &srvDesc, m_texturesDH.GetCPUDescriptor(m_globalBufferDescriptorsOffsets[ GBB_NORMAL ].m_srvOffset) );
+	m_globalBufferDescriptorsOffsets[ GBB_NORMAL_ROUGHNESS ].m_srvOffset = textureNum + GBB_NORMAL_ROUGHNESS;
+	srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	m_device->CreateShaderResourceView(m_globalBufferBuffers[ GBB_NORMAL_ROUGHNESS ], &srvDesc, m_texturesDH.GetCPUDescriptor(m_globalBufferDescriptorsOffsets[ GBB_NORMAL_ROUGHNESS ].m_srvOffset) );
 
 	m_globalBufferDescriptorsOffsets[ GBB_EMISSIVE_SPEC ].m_srvOffset = textureNum + GBB_EMISSIVE_SPEC;
 	srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;

@@ -14,7 +14,7 @@ cbuffer objectBuffer : register(b1)
 #endif
 
 #ifdef DIRECT
-	float3 LightDirWS; 
+	float3 LightDirVS; 
 #endif
 }
 
@@ -29,11 +29,10 @@ float GetLinearDepth( float2 uv )
 	return PerspectiveValues.z / ( depthHW + PerspectiveValues.w );
 }
 
-float3 GetPositionWS( float2 uv, float2 position )
+float3 GetPositionVS( float2 uv, float2 position )
 {
 	float linearDepth = GetLinearDepth( position );
-	float3 positionWS = float3( uv * PerspectiveValues.xy * linearDepth, linearDepth );
-	return mul( float4( positionWS, 1.f ), ViewToWorld ).xyz;
+	return float3( uv * PerspectiveValues.xy * linearDepth, linearDepth );
 }
 
 struct VSToPS
@@ -50,36 +49,36 @@ void vsMain( float2 position : POSITION, out VSToPS output )
 
 float4 psMain( VSToPS input ) : SV_TARGET
 {
-	float3 normalWS = normalize(NormalTex.Load( int3( input.m_position.xy, 0 ) ).rgb * 2.f - 1.f);
+	float3 normalVS = normalize(NormalTex.Load( int3( input.m_position.xy, 0 ) ).rgb * 2.f - 1.f);
 	float3 baseColor = DiffTex.Load( int3( input.m_position.xy, 0 ) ).rgb;
 	float4 emissiveSpec = EmissiveSpecTex.Load( int3( input.m_position.xy, 0 ) );
-	float3 positionWS = GetPositionWS( input.m_uv, input.m_position );
+	float3 positionVS = GetPositionVS( input.m_uv, input.m_position );
 
-	float3 lightDirWS = 0.f;
+	float3 lightDirVS = 0.f;
 	float3 color = 0.f;
 	float ndl = 0.f;
 	float att = 1.f;
 
 #ifdef POINT
-	lightDirWS = LightPos - positionWS;
-	float distance = saturate( length( lightDirWS ) * Attenuation.x );
+	lightDirVS = LightPos - positionVS;
+	float distance = saturate( length( lightDirVS ) * Attenuation.x );
 	float b = -Attenuation.y - 1.f;
 	att = distance * ( distance * b + Attenuation.y ) + 1.f;
 #endif
 
 #ifdef DIRECT
-	lightDirWS = LightDirWS;
+	lightDirVS = LightDirVS;
 #endif
 
-	float3 eyeVector = normalize( -positionWS );
-	float3 normLigtDirWS = normalize( lightDirWS );
+	float3 eyeVector = normalize( -positionVS );
+	float3 normLigtDirVS = normalize( lightDirVS );
 
-	float3 halfVec = normalize( eyeVector + normLigtDirWS );
-	float cosAngle = saturate( dot( normalWS, halfVec ) );
+	float3 halfVec = normalize( eyeVector + normLigtDirVS );
+	float cosAngle = saturate( dot( normalVS, halfVec ) );
 	float specularCoef = pow( cosAngle, 80.f );
 	float spec = specularCoef * emissiveSpec.a;
 
-	ndl = saturate( dot( normLigtDirWS, normalWS ) );
+	ndl = saturate( dot( normLigtDirVS, normalVS ) );
 	color = Color * att * ( ndl * baseColor + spec );
 
 #ifdef AMBIENT

@@ -3,13 +3,14 @@
 enum class EShaderParameters : Byte
 {
 	ObjectToScreen,
+	ObjectToView,
 	ObjectToWorld,
 	LightPos,
 	Attenuation,
 	Color,
 	Cutoff,
 	AmbientColor,
-	LightDirWS,
+	LightDirVS,
 	UVScale,
 	Fade,
 	Soft,

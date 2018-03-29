@@ -452,6 +452,11 @@ struct Vec4
 		w = 1.f;
 	}
 
+	Vec3 ToVec3() const
+	{
+		return *reinterpret_cast< Vec3 const* >( this );
+	}
+
 	static Vec4 const ONE;
 	static Vec4 const ZERO;
 };

@@ -33,6 +33,27 @@ Vec4 Math::Mul(Vec4 const& vector, Matrix4x4 const& matrix)
 		, vector.x * matrix.m_a03 + vector.y * matrix.m_a13 + vector.z * matrix.m_a23 + vector.w * matrix.m_a33
 	);
 }
+
+Vec3 Math::MulVectorOrtho(Vec3 const& vector, Matrix4x4 const& matrix)
+{
+	return Vec3
+	(
+		vector.x * matrix.m_a00 + vector.y * matrix.m_a10 + vector.z * matrix.m_a20
+		, vector.x * matrix.m_a01 + vector.y * matrix.m_a11 + vector.z * matrix.m_a21
+		, vector.x * matrix.m_a02 + vector.y * matrix.m_a12 + vector.z * matrix.m_a22
+	);
+}
+
+Vec3 Math::MulPositionOrtho(Vec3 const& vector, Matrix4x4 const& matrix)
+{
+	return Vec3
+	(
+		vector.x * matrix.m_a00 + vector.y * matrix.m_a10 + vector.z * matrix.m_a20 + matrix.m_a30
+		, vector.x * matrix.m_a01 + vector.y * matrix.m_a11 + vector.z * matrix.m_a21 + matrix.m_a31
+		, vector.x * matrix.m_a02 + vector.y * matrix.m_a12 + vector.z * matrix.m_a22 + matrix.m_a32
+	);
+}
+
 Matrix4x4 Math::Mul(Matrix4x4 const& matrixA, Matrix4x4 const& matrixB)
 {
 	return Matrix4x4

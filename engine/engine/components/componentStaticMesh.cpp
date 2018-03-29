@@ -12,15 +12,18 @@ void CComponentStaticMeshManager::FillRenderData() const
 	renderData.m_indicesStart = 0;
 
 	Matrix4x4 const worldToScreen = GViewObject.m_camera.m_worldToScreen;
+	Matrix4x4 const worldToView = GViewObject.m_camera.m_worldToView;
 	UINT const renderComponentsNum = m_renderComponents.Size();
 	for ( UINT i = 0; i < renderComponentsNum; ++i )
 	{
 		SComponentTransform const transform = GComponentTransformManager.GetComponentNoCheck( m_renderComponents[ i ].m_transformID );
 		SComponentStaticMesh const staticMesh = GetComponentNoCheck( m_renderComponents[ i ].m_staticMeshID );
 
-		Matrix4x4 tObjectToWorld = Matrix4x4::GetTranslateRotationSize( transform.m_position, transform.m_rotation, transform.m_scale );
-		Matrix4x4 tObjectToScreen = Math::Mul( tObjectToWorld, worldToScreen );
-		tObjectToWorld.Transpose();
+		Matrix4x4 const objectToWorld = Matrix4x4::GetTranslateRotationSize( transform.m_position, transform.m_rotation, transform.m_scale );
+
+		Matrix4x4 tObjectToView = Math::Mul( objectToWorld, worldToView );
+		Matrix4x4 tObjectToScreen = Math::Mul( objectToWorld, worldToScreen );
+		tObjectToView.Transpose();
 		tObjectToScreen.Transpose();
 
 		renderData.m_indicesNum = GGeometryInfo[ staticMesh.m_geometryInfoID ].m_indicesNum;
@@ -36,7 +39,7 @@ void CComponentStaticMeshManager::FillRenderData() const
 
 		CConstBufferCtx const cbCtx = GRender.GetConstBufferCtx( renderData.m_cbOffset, staticMesh.m_shaderID );
 		cbCtx.SetParam( &tObjectToScreen,		sizeof( tObjectToScreen ),	EShaderParameters::ObjectToScreen );
-		cbCtx.SetParam( &tObjectToWorld,		3 * sizeof( Vec4 ),			EShaderParameters::ObjectToWorld );
+		cbCtx.SetParam( &tObjectToView,		3 * sizeof( Vec4 ),				EShaderParameters::ObjectToView );
 		cbCtx.SetParam( &staticMesh.m_tiling,	sizeof( Vec2 ),				EShaderParameters::Tiling );
 
 		GRender.AddCommonRenderData( renderData, staticMesh.m_layer );

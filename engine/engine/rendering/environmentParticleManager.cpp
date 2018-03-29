@@ -197,19 +197,19 @@ void CEnvironmentParticleManager::InitProjectionMatrix( Vec3 const forward, UINT
 	m_viewToWorld.Inverse( worldToView );
 	float const vertexPositionOffset = ( float( boxesNum ) + 0.5f ) * m_boxesSize;
 
-	Vec4 vertices[]
+	Vec3 vertices[]
 	{
-		Vec4( +vertexPositionOffset, +vertexPositionOffset, +vertexPositionOffset, 1.f ), Vec4( -vertexPositionOffset, +vertexPositionOffset, +vertexPositionOffset, 1.f ),
-		Vec4( -vertexPositionOffset, -vertexPositionOffset, +vertexPositionOffset, 1.f ), Vec4( +vertexPositionOffset, -vertexPositionOffset, +vertexPositionOffset, 1.f ),
-		Vec4( +vertexPositionOffset, +vertexPositionOffset, -vertexPositionOffset, 1.f ), Vec4( -vertexPositionOffset, +vertexPositionOffset, -vertexPositionOffset, 1.f ),
-		Vec4( -vertexPositionOffset, -vertexPositionOffset, -vertexPositionOffset, 1.f ), Vec4( +vertexPositionOffset, -vertexPositionOffset, -vertexPositionOffset, 1.f )
+		Vec3( +vertexPositionOffset, +vertexPositionOffset, +vertexPositionOffset ), Vec3( -vertexPositionOffset, +vertexPositionOffset, +vertexPositionOffset ),
+		Vec3( -vertexPositionOffset, -vertexPositionOffset, +vertexPositionOffset ), Vec3( +vertexPositionOffset, -vertexPositionOffset, +vertexPositionOffset ),
+		Vec3( +vertexPositionOffset, +vertexPositionOffset, -vertexPositionOffset ), Vec3( -vertexPositionOffset, +vertexPositionOffset, -vertexPositionOffset ),
+		Vec3( -vertexPositionOffset, -vertexPositionOffset, -vertexPositionOffset ), Vec3( +vertexPositionOffset, -vertexPositionOffset, -vertexPositionOffset )
 	};
 
 	float maxAxis[] = { 0.f, 0.f, 0.f };
 
 	for ( UINT i = 0; i < ARRAYSIZE( vertices ); ++i )
 	{
-		Vec4 const vertex = Math::Mul( vertices[ i ], worldToView );
+		Vec3 const vertex = Math::MulPositionOrtho( vertices[ i ], worldToView );
 
 		maxAxis[ 0 ] = max( maxAxis[ 0 ], abs( vertex.data[ 0 ] ) );
 		maxAxis[ 1 ] = max( maxAxis[ 1 ], abs( vertex.data[ 1 ] ) );

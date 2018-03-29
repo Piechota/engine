@@ -4,6 +4,7 @@
 void CComponentLightManager::FillRenderData() const
 {
 	SLightRenderData lightRenderData;
+	Matrix4x4 const worldToView = GViewObject.m_camera.m_worldToView;
 
 	{
 		Byte dirLightFlags = Byte( LF_AMBIENT );
@@ -15,10 +16,12 @@ void CComponentLightManager::FillRenderData() const
 		SLightRenderData lightRenderData;
 		lightRenderData.m_lightShader = dirLightFlags;
 
+		Vec3 const directionLightVS = Math::MulVectorOrtho( m_directLightDir, worldToView );
+
 		CConstBufferCtx const cbCtx = GRender.GetLightConstBufferCtx( lightRenderData.m_cbOffset, dirLightFlags );
 		if ( dirLightFlags & Byte( LF_DIRECT ) )
 		{
-			cbCtx.SetParam( &m_directLightDir,		sizeof( m_directLightDir ),		EShaderParameters::LightDirWS );
+			cbCtx.SetParam( &directionLightVS,		sizeof( directionLightVS ),		EShaderParameters::LightDirVS );
 			cbCtx.SetParam( &m_directLightColor,	sizeof( m_directLightColor ),	EShaderParameters::Color );
 		}
 		cbCtx.SetParam( &m_ambientLightColor,		sizeof( m_ambientLightColor ),	EShaderParameters::AmbientColor );
@@ -36,10 +39,11 @@ void CComponentLightManager::FillRenderData() const
 
 		lightRenderData.m_lightShader = light.m_lighShader;
 
-		CConstBufferCtx const cbCtx = GRender.GetLightConstBufferCtx( lightRenderData.m_cbOffset, light.m_lighShader );
-
+		Vec3 const positionVS = Math::MulPositionOrtho( transform.m_position, worldToView );
 		Vec2 const attenuation( 1.f / light.m_radius, light.m_fade );
-		cbCtx.SetParam( &transform.m_position,		sizeof( transform.m_position ),			EShaderParameters::LightPos );
+
+		CConstBufferCtx const cbCtx = GRender.GetLightConstBufferCtx( lightRenderData.m_cbOffset, light.m_lighShader );
+		cbCtx.SetParam( &positionVS,				sizeof( positionVS ),					EShaderParameters::LightPos );
 		cbCtx.SetParam( &light.m_color,				sizeof( light.m_color ),				EShaderParameters::Color );
 		cbCtx.SetParam( &attenuation,				sizeof( attenuation ),					EShaderParameters::Attenuation );
 
