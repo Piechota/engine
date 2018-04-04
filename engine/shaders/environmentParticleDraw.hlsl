@@ -17,12 +17,6 @@ Texture2D EnviroProjectionTex : register( t4 );
 SamplerState Sampler : register(s1);
 SamplerState SamplerDepth : register(s2);
 
-float GetLinearDepth( float2 uv )
-{
-	float depthHW = DepthTex.Load( int3( uv.xy, 0 ) ).r;
-	return PerspectiveValues.z / ( depthHW + PerspectiveValues.w );
-}
-
 struct VStoPS
 {
 	float4 m_position : SV_POSITION;
@@ -71,7 +65,7 @@ void vsMain(uint vertexID : SV_VertexID, uint instanceID : SV_InstanceID, out VS
 	float3 vertexPosition = positionWS + verticesPositions[ vertexID % 6 ];
 
 	output.m_position = mul( float4( vertexPosition, 1.f ), WorldToScreen );
-	output.m_projectionSpace = mul( float4( vertexPosition, 1.f ), EnviroProjection );
+	output.m_projectionSpace = mul( float4( vertexPosition, 1.f ), EnviroProjection ).xyz;
 	output.m_uv = UVScale * verticesUV[ vertexID % 6 ] + particle.m_uvPosition;
 	float3 axisDistance = abs( positionToCameraWS );
 	output.m_distance = max( max( axisDistance.x, axisDistance.y ), axisDistance.z );
@@ -85,7 +79,7 @@ float4 psMain(VStoPS input) : SV_TARGET0
 	float depth = EnviroProjectionTex.Sample( SamplerDepth, uvPosition ).r;
 	clip( depth - input.m_projectionSpace.z);
 
-	float linearDepth = GetLinearDepth( input.m_position.xy );
+	float linearDepth = GetLinearDepth( DepthTex, input.m_position.xy, PerspectiveValues.zw );
 	float soft = smoothstep( 0.f, Soft, linearDepth - input.m_depth );
 	float fade = soft * smoothstep( Fade.x, Fade.y, input.m_distance );
 	clip( fade - 0.002f );

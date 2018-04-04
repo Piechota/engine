@@ -18,21 +18,49 @@ cbuffer objectBuffer : register(b1)
 #endif
 }
 
-Texture2D DiffTex : register( t0 );
-Texture2D NormalTex : register( t1 );
-Texture2D EmissiveSpecTex : register( t2 );
-Texture2D DepthTex : register( t3 );
+Texture2D DiffTex			: register( t0 );
+Texture2D NormalTex			: register( t1 );
+Texture2D EmissiveRoughness : register( t2 );
+Texture2D DepthTex			: register( t3 );
 
-float GetLinearDepth( float2 uv )
+float3 SchlickF( float3 f0, float voh )
 {
-	float depthHW = DepthTex.Load( int3( uv.xy, 0 ) ).r;
-	return PerspectiveValues.z / ( depthHW + PerspectiveValues.w );
+	return f0 + ( 1.f - f0 ) * pow( 2.f, ( -5.55473f * voh - 6.98316 ) * voh );
 }
 
-float3 GetPositionVS( float2 uv, float2 position )
+float DisneyNDF( float roughness, float noh )
 {
-	float linearDepth = GetLinearDepth( position );
-	return float3( uv * PerspectiveValues.xy * linearDepth, linearDepth );
+	float roughness4 = roughness * roughness;
+	roughness4 *= roughness4;
+
+	float den = noh * noh * ( roughness4 - 1.f ) + 1.f;
+	return roughness4 / ( M_PI * den * den );
+}
+
+float SchlickG( float roughness, float nol, float nov )
+{
+	float k = roughness + 1.f;
+	k = k * k * ( 1.f / 8.f );
+
+	float gL = nol * ( 1.f - k ) + k;
+	float gV = nov * ( 1.f - k ) + k;
+
+	return rcp(gL * gV);
+}
+
+float3 SpecularTerm( float3 f0, float roughness, float3 normal, float3 view, float3 halfDir, float3 lightDir )
+{
+	float noh = saturate( dot( normal, halfDir ) );
+	float nov = saturate( dot( normal, view ) );
+	float voh = saturate( dot( view, halfDir ) );
+	float nol = saturate( dot( normal, lightDir ) );
+
+	return SchlickF( f0, voh ) * ( 0.25f * DisneyNDF( roughness, noh ) * SchlickG( roughness, nol, nov ) );
+}
+
+float3 DiffuseTerm( float3 baseColor )
+{
+	return baseColor * ( 1.f / M_PI );
 }
 
 struct VSToPS
@@ -49,14 +77,14 @@ void vsMain( float2 position : POSITION, out VSToPS output )
 
 float4 psMain( VSToPS input ) : SV_TARGET
 {
-	float3 normalVS = normalize(NormalTex.Load( int3( input.m_position.xy, 0 ) ).rgb * 2.f - 1.f);
-	float3 baseColor = DiffTex.Load( int3( input.m_position.xy, 0 ) ).rgb;
-	float4 emissiveSpec = EmissiveSpecTex.Load( int3( input.m_position.xy, 0 ) );
-	float3 positionVS = GetPositionVS( input.m_uv, input.m_position );
+	float4 normalVS = NormalTex.Load( int3( input.m_position.xy, 0 ) );
+	float4 baseColorMetalness = DiffTex.Load( int3( input.m_position.xy, 0 ) );
+	float4 emissiveRoughness = EmissiveRoughness.Load( int3( input.m_position.xy, 0 ) );
+	float3 positionVS = GetPositionVS( DepthTex, PerspectiveValues, input.m_uv, input.m_position.xy );
 
-	float3 lightDirVS = 0.f;
+	float3 lightDirVS = float3(0.f, 0.f, 1.f);
 	float3 color = 0.f;
-	float ndl = 0.f;
+	float nol = 0.f;
 	float att = 1.f;
 
 #ifdef POINT
@@ -72,19 +100,21 @@ float4 psMain( VSToPS input ) : SV_TARGET
 
 	float3 eyeVector = normalize( -positionVS );
 	float3 normLigtDirVS = normalize( lightDirVS );
-
 	float3 halfVec = normalize( eyeVector + normLigtDirVS );
-	float cosAngle = saturate( dot( normalVS, halfVec ) );
-	float specularCoef = pow( cosAngle, 80.f );
-	float spec = specularCoef * emissiveSpec.a;
 
-	ndl = saturate( dot( normLigtDirVS, normalVS ) );
-	color = Color * att * ( ndl * baseColor + spec );
+	float3 normal = normalize( normalVS.xyz * 2.f - 1.f );
+	float roughness = emissiveRoughness.a;
+
+	float3 f0 = lerp( 0.04f, baseColorMetalness.rgb, baseColorMetalness.a );
+	float3 specular = SpecularTerm( f0, roughness, normal, eyeVector, halfVec, lightDirVS );
+	float3 diffuse = DiffuseTerm( baseColorMetalness.rgb );
+
+	nol = saturate( dot( normLigtDirVS, normal ) );
+	color = Color * ( att * nol ) * ( specular + diffuse );
 
 #ifdef AMBIENT
-	color += baseColor * AmbientColor + emissiveSpec.rgb;
+	color += diffuse * AmbientColor + emissiveRoughness.rgb;
 #endif
-
 
 	return float4( color, 1.f );
 }

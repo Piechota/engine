@@ -25,7 +25,7 @@ CT_ASSERT( (ARRAYSIZE( ShaderParamsNames ) == ( UINT(EShaderParameters::SP_MAX) 
 inline void CShaderRes::LoadShader(LPCWSTR pFileName, D3D_SHADER_MACRO const* pDefines, LPCSTR pEmtryPoint, LPCSTR pTarget, ID3DBlob** ppCode) const
 {
 	ID3DBlob* error = nullptr;
-	CheckResult( D3DCompileFromFile(pFileName, pDefines, D3D_COMPILE_STANDARD_FILE_INCLUDE, pEmtryPoint, pTarget, D3DCOMPILE_OPTIMIZATION_LEVEL3, 0, ppCode, &error), error );
+	CheckResult( D3DCompileFromFile(pFileName, pDefines, D3D_COMPILE_STANDARD_FILE_INCLUDE, pEmtryPoint, pTarget, D3DCOMPILE_OPTIMIZATION_LEVEL3 | D3DCOMPILE_WARNINGS_ARE_ERRORS, 0, ppCode, &error), error );
 }
 
 void CShaderRes::InitShader( LPCWSTR pFileName, D3D12_INPUT_ELEMENT_DESC const* vertexElements, UINT const vertexElementsNum, UINT const renderTargetNum, DXGI_FORMAT const* renderTargetFormats, ERenderTargetBlendStates const* renderTargetBlendStates, DXGI_FORMAT const depthFormat, EDepthStencilStates const depthStencilState, ERasterizerStates const rasterizationState, D3D_SHADER_MACRO const* pDefines )
@@ -63,7 +63,6 @@ void CShaderRes::InitShader( LPCWSTR pFileName, D3D12_INPUT_ELEMENT_DESC const* 
 	D3DReflect( vsShader->GetBufferPointer(), vsShader->GetBufferSize(), IID_PPV_ARGS( &shaderRefl ) );
 	
 	shaderCBRefl = shaderRefl->GetConstantBufferByName( "objectBuffer" );
-	shaderCBRefl->GetDesc( &bufferDesc );
 	if ( shaderCBRefl->GetDesc( &bufferDesc ) == S_OK )
 	{
 		m_bufferSize = UINT16( bufferDesc.Size );

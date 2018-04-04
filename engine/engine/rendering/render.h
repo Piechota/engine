@@ -59,8 +59,8 @@ private:
 	enum EGlobalBufferBuffers
 	{
 		GBB_DIFFUSE_METALNESS,
-		GBB_NORMAL_ROUGHNESS,
-		GBB_EMISSIVE_SPEC,
+		GBB_NORMAL,
+		GBB_EMISSIVE_ROUGHNESS,
 		GBB_DEPTH,
 		GBB_RAIN_DEPTH,
 
@@ -194,6 +194,10 @@ public:
 	void AddCommonRenderData( SCommonRenderData const& commonRenderData, Byte const renderLayer ) { m_commonRenderData[renderLayer].Add( commonRenderData ); }
 	void AddLightRenderData( SLightRenderData const& lightRenderData ) { m_lightRenderData.Add( lightRenderData ); }
 	void AddEnviroParticleRenderData( SShadowRenderData const& shadowRenderData ) { m_enviroParticleRenderData.Add( shadowRenderData ); }
+
+#ifndef FINAL_BUILD
+	void ReinitShaders();
+#endif
 
 public: //Getters/setters
 	void SetWindowWidth(int const wndWidth) { m_wndWidth = wndWidth; }

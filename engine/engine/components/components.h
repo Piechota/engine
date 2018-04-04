@@ -38,6 +38,10 @@ enum ETextures
 	T_METAL_D,
 	T_METAL_N,
 	T_METAL_S,
+	T_PBR_TEST_B,
+	T_PBR_TEST_N,
+	T_PBR_TEST_R,
+	T_PBR_TEST_M,
 	T_RAIN_DROP,
 	T_SNOW,
 

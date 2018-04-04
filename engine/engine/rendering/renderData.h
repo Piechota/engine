@@ -12,7 +12,7 @@ struct SCommonRenderData
 {
 	enum
 	{
-		MAX_TEXTURES_NUM = 4
+		MAX_TEXTURES_NUM = 5
 	};
 
 	D3D12_GPU_VIRTUAL_ADDRESS m_cbOffset;

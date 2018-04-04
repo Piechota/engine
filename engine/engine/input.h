@@ -11,6 +11,7 @@ enum EKeys
 	K_ESCAPE,
 	K_F2,
 	K_F3,
+	K_F5,
 	K_TAB,
 	K_SPACE = 32,
 	K_1 = '1',
@@ -78,6 +79,7 @@ public:
 		m_keys.Add( tKeyState( ' ',						{ false, false, false } ) );
 		m_keys.Add( tKeyState( K_LEFT_MOUSE_BUTTON,		{ false, false, false } ) );
 		m_keys.Add( tKeyState( K_RIGHT_MOUSE_BUTTON,	{ false, false, false } ) );
+		m_keys.Add( tKeyState( K_F5,					{ false, false, false } ) );
 	}
 	bool IsKeyDown( UINT8 const key ) const
 	{
@@ -162,6 +164,9 @@ public:
 			case VK_F3:
 				for (IInputObserver* observer : GInputManager.m_observers)
 					observer->Input(K_F3);
+				break;
+			case VK_F5:
+				GInputManager.SetKey(K_F5, true);
 				break;
 			case VK_SPACE:
 				GInputManager.SetKey( static_cast<char const>(wParam), true );

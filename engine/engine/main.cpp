@@ -59,7 +59,7 @@ void InitGame()
 	SComponentTransform* testObjectTransform = &GComponentTransformManager.GetComponent( testLightRTransformHandle );
 	SComponentLight* testLight = &GComponentLightManager.GetComponent( testLightRHandle );
 
-	testObjectTransform->m_position.Set( 0.f, 0.f, 0.f );
+	testObjectTransform->m_position.Set( 0.f, 1.f, 10.f );
 	testLight->m_radius = 3.f;
 	testLight->m_color.Set( 2.f, 0.f, 0.f );
 	testLight->m_lighShader = LF_POINT;
@@ -73,7 +73,7 @@ void InitGame()
 	testObjectTransform = &GComponentTransformManager.GetComponent( testLightGTransformHandle );
 	testLight = &GComponentLightManager.GetComponent( testLightGHandle );
 
-	testObjectTransform->m_position.Set( 0.f, 0.f, 0.f );
+	testObjectTransform->m_position.Set( -3.f, -2.f, 10.f );
 	testLight->m_radius = 3.f;
 	testLight->m_color.Set( 0.f, 2.f, 0.f );
 	testLight->m_lighShader = LF_POINT;
@@ -87,7 +87,7 @@ void InitGame()
 	testObjectTransform = &GComponentTransformManager.GetComponent( testLightBTransformHandle );
 	testLight = &GComponentLightManager.GetComponent( testLightBHandle );
 
-	testObjectTransform->m_position.Set( 0.f, 0.f, 0.f );
+	testObjectTransform->m_position.Set( 3.f, -2.f, 10.f );
 	testLight->m_radius = 3.f;
 	testLight->m_color.Set( 0.f, 0.f, 2.f );
 	testLight->m_lighShader = LF_POINT;
@@ -104,18 +104,19 @@ void InitGame()
 	testObjectTransform = &GComponentTransformManager.GetComponent( testObjectTransformHandle );
 	SComponentStaticMesh& testObjectStaticMesh = GComponentStaticMeshManager.GetComponent( testObjectStaticMeshHandle );
 
-	testObjectTransform->m_position.Set( 0.f, -5.f, 10.f );
+	testObjectTransform->m_position.Set( 0.f, -2.f, 10.f );
 	testObjectTransform->m_scale.Set( 1.f, 1.f, 1.f );
 	testObjectTransform->m_rotation = Quaternion::IDENTITY;
 
-	testObjectStaticMesh.m_tiling.Set( 20.f, 20.f );
-	testObjectStaticMesh.m_geometryInfoID = G_SCENE_TEST;
+	testObjectStaticMesh.m_tiling.Set( 1.f, 1.f );
+	testObjectStaticMesh.m_geometryInfoID = G_BOX;
 	testObjectStaticMesh.m_layer = RL_OPAQUE;
 	testObjectStaticMesh.m_shaderID = 0;
-	testObjectStaticMesh.m_textureID[ 0 ] = T_METAL_D;
-	testObjectStaticMesh.m_textureID[ 1 ] = T_METAL_N;
-	testObjectStaticMesh.m_textureID[ 2 ] = T_BLACK;
-	testObjectStaticMesh.m_textureID[ 3 ] = T_METAL_S;
+	testObjectStaticMesh.m_textureID[ 0 ] = T_PBR_TEST_B;
+	testObjectStaticMesh.m_textureID[ 1 ] = T_PBR_TEST_N;
+	testObjectStaticMesh.m_textureID[ 2 ] = T_PBR_TEST_R;
+	testObjectStaticMesh.m_textureID[ 3 ] = T_PBR_TEST_M;
+	testObjectStaticMesh.m_textureID[ 4 ] = T_BLACK;
 
 	GComponentStaticMeshManager.RegisterRenderComponents( testObjectTransformHandle.m_index, testObjectStaticMeshHandle.m_index );
 	GComponentLightManager.RegisterRenderComponents( testLightRTransformHandle.m_index, testLightRHandle.m_index );
@@ -195,6 +196,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
 		L"../content/Metal_Crystals_d.dds",
 		L"../content/Metal_Crystals_n.dds",
 		L"../content/Metal_Crystals_s.dds",
+		L"../content/pbr_test_b.png",
+		L"../content/pbr_test_n.png",
+		L"../content/pbr_test_r.png",
+		L"../content/pbr_test_m.png",
 		L"../content/rainDrop.png",
 		L"../content/snow.png",
 	};
@@ -282,30 +287,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
 			}
 		}
 
-		Quaternion const q0 = Quaternion::FromAngleAxis( GTimer.GetSeconds( GTimer.TimeFromStart() ) * 30.f * MathConsts::DegToRad, Vec3::DOWN.data );
-		Quaternion const q1 = Quaternion::FromAngleAxis( 90.f * MathConsts::DegToRad, Vec3::LEFT.data );
-		Quaternion const q2 = Quaternion::FromAngleAxis( 15.f * MathConsts::DegToRad, Vec3::DOWN.data );
-
-		SComponentTransform& testObjectTransform = GComponentTransformManager.GetComponent( testObjectTransformHandle );
-		//testObjectTransform.m_rotation = q0 * q1 * q2;
-
-		SComponentTransform* testLightTransform = &GComponentTransformManager.GetComponent( testLightRTransformHandle );
-		SComponentLight* testLight = &GComponentLightManager.GetComponent( testLightRHandle );
-		testLightTransform->m_position.Set( -2.5f * cos( GTimer.GetSeconds( GTimer.TimeFromStart() ) ), -2.f + 2.5f * sin( GTimer.GetSeconds( GTimer.TimeFromStart() ) ), 10.f );
-		testLight->m_fade = sin( GTimer.GetSeconds( GTimer.TimeFromStart() ) ) * ( -0.5f ) - 0.5f;
-
-		testLightTransform = &GComponentTransformManager.GetComponent( testLightGTransformHandle );
-		testLight = &GComponentLightManager.GetComponent( testLightGHandle );
-		testLightTransform->m_position.Set( -2.5f * cos( GTimer.GetSeconds( GTimer.TimeFromStart() ) + 2.f * MathConsts::PI / 3.f ), -2.f + 2.5f * sin( GTimer.GetSeconds( GTimer.TimeFromStart() ) + 2.f * MathConsts::PI / 3.f ), 10.f );
-		testLight->m_fade = sin( GTimer.GetSeconds( GTimer.TimeFromStart() ) ) * ( -0.5f ) - 0.5f;
-
-		testLightTransform = &GComponentTransformManager.GetComponent( testLightBTransformHandle );
-		testLight = &GComponentLightManager.GetComponent( testLightBHandle );
-		testLightTransform->m_position.Set( -2.5f * cos( GTimer.GetSeconds( GTimer.TimeFromStart() ) + 4.f * MathConsts::PI / 3.f ), -2.f + 2.5f * sin( GTimer.GetSeconds( GTimer.TimeFromStart() ) + 4.f * MathConsts::PI / 3.f ), 10.f );
-		testLight->m_fade = sin( GTimer.GetSeconds( GTimer.TimeFromStart() ) ) * ( -0.5f ) - 0.5f;
-
 		GComponentCameraManager.MainCameraTick();
+
+		if ( GInputManager.KeyDownLastFrame( K_F5 ) )
+		{
+			GRender.ReinitShaders();
+		}
 		GInputManager.Tick();
+
 		DrawDebugInfo();
 
 		GRender.PreDrawFrame();

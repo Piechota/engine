@@ -13,9 +13,6 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DirectXTex", "DirectXTex\DirectXTex_Desktop_2017_Win10.vcxproj", "{371B9FA9-4C90-4AC6-A123-ACED756D6C77}"
 EndProject
 Global
-	GlobalSection(Performance) = preSolution
-		HasPerformanceSessions = true
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
@@ -49,7 +46,6 @@ Global
 		{1077CD18-814D-475B-A5D7-0993FEA9D3C2}.Final|x64.ActiveCfg = Final|x64
 		{1077CD18-814D-475B-A5D7-0993FEA9D3C2}.Final|x86.ActiveCfg = Final|Win32
 		{1077CD18-814D-475B-A5D7-0993FEA9D3C2}.Profile|x64.ActiveCfg = Release|x64
-		{1077CD18-814D-475B-A5D7-0993FEA9D3C2}.Profile|x64.Build.0 = Release|x64
 		{1077CD18-814D-475B-A5D7-0993FEA9D3C2}.Profile|x64.Deploy.0 = Release|x64
 		{1077CD18-814D-475B-A5D7-0993FEA9D3C2}.Profile|x86.ActiveCfg = Release|Win32
 		{1077CD18-814D-475B-A5D7-0993FEA9D3C2}.Profile|x86.Build.0 = Release|Win32
@@ -65,8 +61,8 @@ Global
 		{371B9FA9-4C90-4AC6-A123-ACED756D6C77}.Final|x64.Build.0 = Final|x64
 		{371B9FA9-4C90-4AC6-A123-ACED756D6C77}.Final|x86.ActiveCfg = Final|Win32
 		{371B9FA9-4C90-4AC6-A123-ACED756D6C77}.Final|x86.Build.0 = Final|Win32
-		{371B9FA9-4C90-4AC6-A123-ACED756D6C77}.Profile|x64.ActiveCfg = Profile|x64
-		{371B9FA9-4C90-4AC6-A123-ACED756D6C77}.Profile|x64.Build.0 = Profile|x64
+		{371B9FA9-4C90-4AC6-A123-ACED756D6C77}.Profile|x64.ActiveCfg = Release|x64
+		{371B9FA9-4C90-4AC6-A123-ACED756D6C77}.Profile|x64.Build.0 = Release|x64
 		{371B9FA9-4C90-4AC6-A123-ACED756D6C77}.Profile|x86.ActiveCfg = Profile|Win32
 		{371B9FA9-4C90-4AC6-A123-ACED756D6C77}.Profile|x86.Build.0 = Profile|Win32
 		{371B9FA9-4C90-4AC6-A123-ACED756D6C77}.Release|x64.ActiveCfg = Release|x64
@@ -76,6 +72,9 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
 	EndGlobalSection
 	GlobalSection(Performance) = preSolution
 		HasPerformanceSessions = true

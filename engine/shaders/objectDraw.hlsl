@@ -10,8 +10,9 @@ cbuffer objectBuffer : register(b1)
 #ifndef GEOMETRY_ONLY
 Texture2D DiffTex : register(t0);
 Texture2D NormTex : register(t1);
-Texture2D EmissiveTex : register(t2);
-Texture2D SpecularTex : register(t3);
+Texture2D RoughnessTex : register(t2);
+Texture2D MetalnessTex : register(t3);
+Texture2D EmissiveTex : register(t4);
 SamplerState Sampler : register(s1);
 #endif
 
@@ -36,9 +37,9 @@ struct PSInput
 
 struct PSOutput
 {
-	float4 m_diffuse		: SV_TARGET0;
-	float4 m_normalVS		: SV_TARGET1;
-	float4 m_emissiveSpec	: SV_TARGET2;
+	float4 m_diffuse			: SV_TARGET0;
+	float4 m_normalVS			: SV_TARGET1;
+	float4 m_emissiveRoughness	: SV_TARGET2;
 };
 
 void vsMain( VSInput input, out PSInput output )
@@ -58,18 +59,19 @@ void vsMain( VSInput input, out PSInput output )
 #ifndef GEOMETRY_ONLY
 void psMain(PSInput input, out PSOutput output )
 {
-	output.m_normalVS = NormTex.Sample( Sampler, float2(input.m_uv.x, 1.f - input.m_uv.y ) );
-	output.m_diffuse = DiffTex.Sample( Sampler, float2(input.m_uv.x, 1.f - input.m_uv.y ) );
+	float4 roughness = RoughnessTex.Sample( Sampler, input.m_uv );
+	float4 metalness = MetalnessTex.Sample( Sampler, input.m_uv );
 
-	output.m_normalVS.a = 0.f;
-	output.m_diffuse.a = 1.f;
+	output.m_normalVS = NormTex.Sample( Sampler, input.m_uv );
+	output.m_diffuse = DiffTex.Sample( Sampler, input.m_uv );
+	output.m_diffuse.a = metalness.r;
 
-	output.m_normalVS.xyz = mad( output.m_normalVS, 2.f, -1.f );
-	output.m_normalVS.xyz = mul( output.m_normalVS, input.m_tbn );
-	output.m_normalVS.xyz = normalize( output.m_normalVS );
-	output.m_normalVS.xyz = mad( output.m_normalVS, 0.5f, 0.5f );
-	output.m_emissiveSpec.rgb = EmissiveTex.Sample( Sampler, float2(input.m_uv.x, 1.f - input.m_uv.y ) ).rgb;
-	output.m_emissiveSpec.a = SpecularTex.Sample( Sampler, float2(input.m_uv.x, 1.f - input.m_uv.y ) ).r;
+	output.m_normalVS.xyz = mad( output.m_normalVS.xyz, 2.f, -1.f );
+	output.m_normalVS.xyz = mul( output.m_normalVS.xyz, input.m_tbn );
+	output.m_normalVS.xyz = normalize( output.m_normalVS.xyz );
+	output.m_normalVS.xyz = mad( output.m_normalVS.xyz, 0.5f, 0.5f );
+	output.m_emissiveRoughness.rgb = EmissiveTex.Sample( Sampler, input.m_uv ).rgb;
+	output.m_emissiveRoughness.a = roughness.r;
 #else
 void psMain(PSInput input)
 {
