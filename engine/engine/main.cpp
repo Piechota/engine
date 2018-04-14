@@ -22,13 +22,6 @@ int GHeight = 800;
 
 SComponentHandle testObjectTransformHandle;
 
-SComponentHandle testLightRTransformHandle;
-SComponentHandle testLightGTransformHandle;
-SComponentHandle testLightBTransformHandle;
-SComponentHandle testLightRHandle;
-SComponentHandle testLightGHandle;
-SComponentHandle testLightBHandle;
-
 //#define DUMMY_PROFILER
 
 #ifdef DUMMY_PROFILER
@@ -51,50 +44,8 @@ void InitGame()
 	testCamera->m_position = Vec3::ZERO;
 	testCamera->m_rotation = Quaternion::IDENTITY;
 
-	testEntityID = GEntityManager.CreateEntity();
-	testEntity = GEntityManager.GetEntity( testEntityID );
-	testLightRTransformHandle = testEntity->AddComponentTransform();
-	testLightRHandle = testEntity->AddComponentLight();
-
-	SComponentTransform* testObjectTransform = &GComponentTransformManager.GetComponent( testLightRTransformHandle );
-	SComponentLight* testLight = &GComponentLightManager.GetComponent( testLightRHandle );
-
-	testObjectTransform->m_position.Set( 0.f, 1.f, 10.f );
-	testLight->m_radius = 3.f;
-	testLight->m_color.Set( 2.f, 0.f, 0.f );
-	testLight->m_lighShader = LF_POINT;
-	testLight->m_fade = -1.f;
-
-	testEntityID = GEntityManager.CreateEntity();
-	testEntity = GEntityManager.GetEntity( testEntityID );
-	testLightGTransformHandle = testEntity->AddComponentTransform();
-	testLightGHandle = testEntity->AddComponentLight();
-
-	testObjectTransform = &GComponentTransformManager.GetComponent( testLightGTransformHandle );
-	testLight = &GComponentLightManager.GetComponent( testLightGHandle );
-
-	testObjectTransform->m_position.Set( -3.f, -2.f, 10.f );
-	testLight->m_radius = 3.f;
-	testLight->m_color.Set( 0.f, 2.f, 0.f );
-	testLight->m_lighShader = LF_POINT;
-	testLight->m_fade = -1.f;
-
-	testEntityID = GEntityManager.CreateEntity();
-	testEntity = GEntityManager.GetEntity( testEntityID );
-	testLightBTransformHandle = testEntity->AddComponentTransform();
-	testLightBHandle = testEntity->AddComponentLight();
-
-	testObjectTransform = &GComponentTransformManager.GetComponent( testLightBTransformHandle );
-	testLight = &GComponentLightManager.GetComponent( testLightBHandle );
-
-	testObjectTransform->m_position.Set( 3.f, -2.f, 10.f );
-	testLight->m_radius = 3.f;
-	testLight->m_color.Set( 0.f, 0.f, 2.f );
-	testLight->m_lighShader = LF_POINT;
-	testLight->m_fade = -1.f;
-
-	Quaternion const q1 = Quaternion::FromAngleAxis( 90.f * MathConsts::DegToRad, Vec3::LEFT.data );
-	Quaternion const q2 = Quaternion::FromAngleAxis( 15.f * MathConsts::DegToRad, Vec3::DOWN.data );
+	SComponentTransform* testObjectTransform = nullptr;
+	SComponentLight* testLight = nullptr;
 
 	testEntityID = GEntityManager.CreateEntity();
 	testEntity = GEntityManager.GetEntity( testEntityID );
@@ -105,10 +56,10 @@ void InitGame()
 	SComponentStaticMesh& testObjectStaticMesh = GComponentStaticMeshManager.GetComponent( testObjectStaticMeshHandle );
 
 	testObjectTransform->m_position.Set( 0.f, -2.f, 10.f );
-	testObjectTransform->m_scale.Set( 1.f, 1.f, 1.f );
+	testObjectTransform->m_scale.Set( 10.f, 1.f, 10.f );
 	testObjectTransform->m_rotation = Quaternion::IDENTITY;
 
-	testObjectStaticMesh.m_tiling.Set( 1.f, 1.f );
+	testObjectStaticMesh.m_tiling.Set( 10.f, 10.f );
 	testObjectStaticMesh.m_geometryInfoID = G_BOX;
 	testObjectStaticMesh.m_layer = RL_OPAQUE;
 	testObjectStaticMesh.m_shaderID = 0;
@@ -119,9 +70,6 @@ void InitGame()
 	testObjectStaticMesh.m_textureID[ 4 ] = T_BLACK;
 
 	GComponentStaticMeshManager.RegisterRenderComponents( testObjectTransformHandle.m_index, testObjectStaticMeshHandle.m_index );
-	GComponentLightManager.RegisterRenderComponents( testLightRTransformHandle.m_index, testLightRHandle.m_index );
-	GComponentLightManager.RegisterRenderComponents( testLightGTransformHandle.m_index, testLightGHandle.m_index );
-	GComponentLightManager.RegisterRenderComponents( testLightBTransformHandle.m_index, testLightBHandle.m_index );
 }
 
 void DrawDebugInfo()
@@ -179,29 +127,31 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
 
 	char const* meshes[] =
 	{
-		"../content/spaceship",
-		"../content/box",
-		"../content/scene_test",
+		"../content/models/spaceship",
+		"../content/models/box",
+		"../content/models/scene_test",
 	};
 	CT_ASSERT( ARRAYSIZE( meshes ) == G_MAX );
 
 	wchar_t const* textures[] =
 	{
-		L"../content/sdf_font_512.png",
-		L"../content/black.png",
-		L"../content/spaceship_d.png",
-		L"../content/spaceship_n.png",
-		L"../content/spaceship_e.png",
-		L"../content/spaceship_s.png",
-		L"../content/Metal_Crystals_d.dds",
-		L"../content/Metal_Crystals_n.dds",
-		L"../content/Metal_Crystals_s.dds",
-		L"../content/pbr_test_b.png",
-		L"../content/pbr_test_n.png",
-		L"../content/pbr_test_r.png",
-		L"../content/pbr_test_m.png",
-		L"../content/rainDrop.png",
-		L"../content/snow.png",
+		L"../content/textures/sdf_font_512.png",
+		L"../content/textures/common/black.png",
+		L"../content/textures/common/ltc_amp.dds",
+		L"../content/textures/common/ltc_mat.dds",
+		L"../content/textures/spaceship_d.png",
+		L"../content/textures/spaceship_n.png",
+		L"../content/textures/spaceship_e.png",
+		L"../content/textures/spaceship_s.png",
+		L"../content/textures/Metal_Crystals_d.dds",
+		L"../content/textures/Metal_Crystals_n.dds",
+		L"../content/textures/Metal_Crystals_s.dds",
+		L"../content/textures/pbr_test_b.dds",
+		L"../content/textures/pbr_test_n.dds",
+		L"../content/textures/pbr_test_r.dds",
+		L"../content/textures/pbr_test_m.dds",
+		L"../content/textures/rainDrop.png",
+		L"../content/textures/snow.png",
 	};
 	CT_ASSERT( ARRAYSIZE( textures ) == T_MAX );
 
@@ -251,12 +201,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
 
 	char const* sounds[] =
 	{
-		"../content/shoot0.wav",
-		"../content/shoot1.wav",
-		"../content/shoot2.wav",
-		"../content/heal.wav",
-		"../content/explosion.wav",
-		"../content/build.wav",
+		"../content/sounds/shoot0.wav",
+		"../content/sounds/shoot1.wav",
+		"../content/sounds/shoot2.wav",
+		"../content/sounds/heal.wav",
+		"../content/sounds/explosion.wav",
+		"../content/sounds/build.wav",
 	};
 
 	for (unsigned int soundID = 0; soundID < SET_MAX; ++soundID)
