@@ -6,7 +6,7 @@ struct SComponentLight
 	float m_radius;
 	float m_fade;
 
-	Byte m_lighShader;
+	Byte m_lightShader;
 };
 
 POD_TYPE( SComponentLight )

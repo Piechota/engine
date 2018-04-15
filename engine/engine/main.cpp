@@ -21,6 +21,7 @@ int GWidth = 800;
 int GHeight = 800;
 
 SComponentHandle testObjectTransformHandle;
+SComponentHandle ltcLightTest;
 
 //#define DUMMY_PROFILER
 
@@ -68,8 +69,33 @@ void InitGame()
 	testObjectStaticMesh.m_textureID[ 2 ] = T_PBR_TEST_R;
 	testObjectStaticMesh.m_textureID[ 3 ] = T_PBR_TEST_M;
 	testObjectStaticMesh.m_textureID[ 4 ] = T_BLACK;
-
 	GComponentStaticMeshManager.RegisterRenderComponents( testObjectTransformHandle.m_index, testObjectStaticMeshHandle.m_index );
+
+	testEntityID = GEntityManager.CreateEntity();
+	testEntity = GEntityManager.GetEntity( testEntityID );
+	ltcLightTest = testEntity->AddComponentTransform();
+	testObjectStaticMeshHandle = testEntity->AddComponentStaticMesh();
+	SComponentHandle testLtcLightComponentHandle = testEntity->AddComponentLight();
+	SComponentLight& ltcLight = GComponentLightManager.GetComponent( testLtcLightComponentHandle );
+	
+	testObjectTransform = &GComponentTransformManager.GetComponent( ltcLightTest );
+	SComponentStaticMesh& ltcLightStaticMesh = GComponentStaticMeshManager.GetComponent( testObjectStaticMeshHandle );
+
+	testObjectTransform->m_position.Set( 0.f, 0.5f, 10.f );
+	testObjectTransform->m_scale.Set( 1.f, 1.f, 1.f );
+	testObjectTransform->m_rotation = Quaternion::FromAxisAngle( Vec3::RIGHT.data, -90.f * MathConsts::DegToRad );
+
+	ltcLightStaticMesh.m_color.Set( 1.f, 1.f, 1.f );
+	ltcLightStaticMesh.m_tiling.Set( 1.f, 1.f );
+	ltcLightStaticMesh.m_geometryInfoID = G_PLANE;
+	ltcLightStaticMesh.m_layer = RL_UNLIT;
+	ltcLightStaticMesh.m_shaderID = Byte(ST_OBJECT_DRAW_SIMPLE);
+	memset( ltcLightStaticMesh.m_textureID, UINT8_MAX, sizeof( ltcLightStaticMesh.m_textureID ) );
+	GComponentStaticMeshManager.RegisterRenderComponents( ltcLightTest.m_index, testObjectStaticMeshHandle.m_index );
+
+	ltcLight.m_color.Set( 2.f, 2.f, 2.f );
+	ltcLight.m_lightShader = Byte( ELightFlags::LF_LTC );
+	GComponentLightManager.RegisterRenderComponents( ltcLightTest.m_index, testLtcLightComponentHandle.m_index );
 }
 
 void DrawDebugInfo()
@@ -130,6 +156,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
 		"../content/models/spaceship",
 		"../content/models/box",
 		"../content/models/scene_test",
+		"../content/models/plane",
 	};
 	CT_ASSERT( ARRAYSIZE( meshes ) == G_MAX );
 
@@ -156,9 +183,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
 	CT_ASSERT( ARRAYSIZE( textures ) == T_MAX );
 
 	GRender.Init();
-	GComponentLightManager.SetDirectLightColor( Vec3( 1.f, 1.f, 1.f ) );
+	GComponentLightManager.SetDirectLightColor( Vec3::ZERO );
 	GComponentLightManager.SetDirectLightDir( Vec3( 0.f, 1.f, 1.f ).GetNormalized() );
-	GComponentLightManager.SetAmbientLightColor( Vec3( 0.1f, 0.1f, 0.1f ) );
+	GComponentLightManager.SetAmbientLightColor( Vec3::ZERO );
 
 	GRender.BeginLoadResources(ARRAYSIZE(textures));
 
@@ -244,6 +271,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
 			GRender.ReinitShaders();
 		}
 		GInputManager.Tick();
+
+		SComponentTransform& testObjectTransform = GComponentTransformManager.GetComponent( ltcLightTest );
+		testObjectTransform.m_rotation = testObjectTransform.m_rotation * Quaternion::FromAxisAngle( Vec3::UP.data, GTimer.GameDelta() );
 
 		DrawDebugInfo();
 

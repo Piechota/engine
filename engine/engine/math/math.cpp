@@ -129,6 +129,8 @@ float RandFloat()
 	return ((float)rand()) / ((float)RAND_MAX);
 }
 
+Vec2 const Vec2::ONE( 1.f, 1.f );
+
 Vec3 const Vec3::ONE( 1.f, 1.f, 1.f );
 Vec3 const Vec3::ZERO( 0.f, 0.f, 0.f );
 Vec3 const Vec3::FORWARD( 0.f, 0.f, 1.f );

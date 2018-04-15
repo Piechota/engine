@@ -40,6 +40,7 @@ void CComponentStaticMeshManager::FillRenderData() const
 		CConstBufferCtx const cbCtx = GRender.GetConstBufferCtx( renderData.m_cbOffset, staticMesh.m_shaderID );
 		cbCtx.SetParam( &tObjectToScreen,		sizeof( tObjectToScreen ),	EShaderParameters::ObjectToScreen );
 		cbCtx.SetParam( &tObjectToView,		3 * sizeof( Vec4 ),				EShaderParameters::ObjectToView );
+		cbCtx.SetParam( &staticMesh.m_color,	sizeof( Vec4 ),				EShaderParameters::Color );
 		cbCtx.SetParam( &staticMesh.m_tiling,	sizeof( Vec2 ),				EShaderParameters::Tiling );
 
 		GRender.AddCommonRenderData( renderData, staticMesh.m_layer );

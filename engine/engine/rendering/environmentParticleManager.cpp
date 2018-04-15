@@ -64,7 +64,7 @@ void CEnvironmentParticleManager::AllocateBuffers()
 
 		D3D12_RESOURCE_DESC particleResDesc = {};
 		particleResDesc.Dimension = D3D12_RESOURCE_DIMENSION::D3D12_RESOURCE_DIMENSION_BUFFER;
-		particleResDesc.Width = m_particlesNum * 10 * sizeof( float ); //position + velocity
+		particleResDesc.Width = m_particlesNum * 11 * sizeof( float ); //position + velocity
 		particleResDesc.Height = 1;
 		particleResDesc.DepthOrArraySize = 1;
 		particleResDesc.MipLevels = 1;
@@ -166,15 +166,15 @@ void CEnvironmentParticleManager::InitParticles(UINT const initParticleNum, UINT
 
 		m_particleCA->Reset();
 		m_particleCL->Reset( m_particleCA, m_particleShaderInit.GetPSO() );
-
+		
 		m_particleCL->SetComputeRootSignature( m_particleRS );
 		m_particleCL->SetComputeRootConstantBufferView( 1, constBufferAddress );
 		m_particleCL->SetComputeRootUnorderedAccessView( 2, m_particlesGPU->GetGPUVirtualAddress() );
-
+		
 		m_particleCL->Dispatch( ( m_particlesNum + 63 ) & ~63, 1, 1 );
-
+		
 		m_particleCL->Close();
-
+		
 		GRender.ExecuteComputeQueue( 1, ( ID3D12CommandList* const* )( &m_particleCL ) );
 		GRender.WaitForComputeQueue();
 	}

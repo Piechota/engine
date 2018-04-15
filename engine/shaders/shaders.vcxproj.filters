@@ -23,5 +23,8 @@
     <FxCompile Include="environmentParticleDraw.hlsl" />
     <FxCompile Include="rectDraw.hlsl" />
     <FxCompile Include="common.hlsl" />
+    <FxCompile Include="ltcLight.hlsl" />
+    <FxCompile Include="objectDrawSimple.hlsl" />
+    <FxCompile Include="ltcCommon.hlsl" />
   </ItemGroup>
 </Project>

@@ -17,6 +17,7 @@ enum ERenderLayer
 	RL_OPAQUE,
 	RL_TRANSLUCENT,
 	RL_OVERLAY,
+	RL_UNLIT,
 
 	RL_MAX
 };

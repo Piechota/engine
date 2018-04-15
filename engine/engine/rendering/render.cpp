@@ -239,8 +239,9 @@ void CRender::InitRootSignatures()
 		{ D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 2, 0, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND },
 		{ D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 3, 0, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND },
 		{ D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 4, 0, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND },
+		{ D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 5, 0, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND },
 	};
-	D3D12_ROOT_PARAMETER rootParameters[8];
+	D3D12_ROOT_PARAMETER rootParameters[9];
 
 	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 	rootParameters[0].Descriptor = {0, 0};
@@ -273,6 +274,10 @@ void CRender::InitRootSignatures()
 	rootParameters[7].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
 	rootParameters[7].DescriptorTable = { 1, &descriptorRange[ 4 ] };
 	rootParameters[7].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+
+	rootParameters[8].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	rootParameters[8].DescriptorTable = { 1, &descriptorRange[ 5 ] };
+	rootParameters[8].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
 	D3D12_STATIC_SAMPLER_DESC const samplers[] =
 	{
@@ -360,13 +365,17 @@ void CRender::InitShaders()
 	ERenderTargetBlendStates const rectDrawRenderTargetsBlend = ERTBS_Disabled;
 	m_shaders[ ST_RECT_DRAW ].InitShader( L"../shaders/rectDraw.hlsl", nullptr, 0, 1, rectDrawRenderTargets, &rectDrawRenderTargetsBlend, DXGI_FORMAT_D24_UNORM_S8_UINT );
 
+	DXGI_FORMAT const objectSimpleDrawRenderTargets[] = { DXGI_FORMAT_R8G8B8A8_UNORM };
+	ERenderTargetBlendStates const objectSimpleDrawRenderTargetsBlend = ERTBS_Disabled;
+	m_shaders[ ST_OBJECT_DRAW_SIMPLE ].InitShader( L"../shaders/objectDrawSimple.hlsl", SSimpleObjectVertexFormat::desc, SSimpleObjectVertexFormat::descNum, 1, objectSimpleDrawRenderTargets, &objectSimpleDrawRenderTargetsBlend, DXGI_FORMAT_D24_UNORM_S8_UINT, EDSS_DepthEnable );
+
 	DXGI_FORMAT const lightRenderTargets[] = { DXGI_FORMAT_R8G8B8A8_UNORM };
 	ERenderTargetBlendStates const lightRenderTargetsBlend[] = { ERTBS_RGBAdd };
 	D3D_SHADER_MACRO lightDefinitions[ LF_MAX ];
 	memset( lightDefinitions, 0, sizeof( lightDefinitions ) );
 
 	UINT definitionID;
-	for ( UINT i = 0; i < LF_MAX; ++i )
+	for ( UINT i = 0; i < LF_LTC; ++i )
 	{
 		definitionID = 0;
 
@@ -392,6 +401,8 @@ void CRender::InitShaders()
 
 		m_shaderLight[i].InitShader( L"../shaders/deferredLight.hlsl", SPosVertexFormat::desc, SPosVertexFormat::descNum, 1, lightRenderTargets, lightRenderTargetsBlend, DXGI_FORMAT_D24_UNORM_S8_UINT, EDSS_Disabled, ERS_Default, lightDefinitions );
 	}
+
+	m_shaderLight[LF_LTC].InitShader( L"../shaders/ltcLight.hlsl", SPosVertexFormat::desc, SPosVertexFormat::descNum, 1, lightRenderTargets, lightRenderTargetsBlend );
 }
 
 void CRender::Init()
@@ -437,7 +448,7 @@ void CRender::Init()
 	InitShaders();
 
 	GTextRenderManager.Init();
-	GEnvironmentParticleManager.Init( /*128*/0, 2, 10.f );
+	GEnvironmentParticleManager.Init( 128, 2, 10.f );
 }
 
 void CRender::DrawRenderData( ID3D12GraphicsCommandList* commandList, TArray< SCommonRenderData > const& renderData )
@@ -526,6 +537,9 @@ void CRender::DrawLights( ID3D12GraphicsCommandList * commandList )
 	commandList->SetGraphicsRootDescriptorTable( 4, m_texturesDH.GetGPUDescriptor( m_globalBufferDescriptorsOffsets[ GBB_NORMAL ].m_srvOffset ) );
 	commandList->SetGraphicsRootDescriptorTable( 5, m_texturesDH.GetGPUDescriptor( m_globalBufferDescriptorsOffsets[ GBB_EMISSIVE_ROUGHNESS ].m_srvOffset ) );
 	commandList->SetGraphicsRootDescriptorTable( 6, m_texturesDH.GetGPUDescriptor( m_globalBufferDescriptorsOffsets[ GBB_DEPTH ].m_srvOffset ) );
+	commandList->SetGraphicsRootDescriptorTable( 7, m_texturesDH.GetGPUDescriptor( T_LTC_AMP ) );
+	commandList->SetGraphicsRootDescriptorTable( 8, m_texturesDH.GetGPUDescriptor( T_LTC_MAT ) );
+
 
 	D3D12_GPU_VIRTUAL_ADDRESS const constBufferStart = m_constBufferResource->GetGPUVirtualAddress();
 
@@ -787,13 +801,9 @@ void CRender::DrawFrame()
 	commandList->SetGraphicsRootDescriptorTable( 7, m_texturesDH.GetGPUDescriptor( m_globalBufferDescriptorsOffsets[ GBB_RAIN_DEPTH ].m_srvOffset ) );
 
 	DrawRenderData( commandList, m_commonRenderData[RL_TRANSLUCENT] );
-	DrawRenderData( commandList, m_commonRenderData[RL_OVERLAY] );
-
+	
 	//DrawDebug( commandList );
 	
-	barriers[0].Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
-	barriers[0].Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-
 	barriers[1].Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
 	barriers[1].Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
 
@@ -809,7 +819,15 @@ void CRender::DrawFrame()
 	barriers[5].Transition.StateAfter = D3D12_RESOURCE_STATE_DEPTH_WRITE;
 	barriers[5].Transition.StateBefore = D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
 
-	commandList->ResourceBarrier(6, barriers);
+	commandList->ResourceBarrier(5, &barriers[1]);
+
+	DrawRenderData( commandList, m_commonRenderData[RL_UNLIT] );
+	DrawRenderData( commandList, m_commonRenderData[RL_OVERLAY] );
+
+	barriers[0].Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+	barriers[0].Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+
+	commandList->ResourceBarrier(1, barriers);
 
 	CheckResult(commandList->Close());
 	m_graphicsCQ->ExecuteCommandLists(1, (ID3D12CommandList**)(&commandList));
@@ -849,11 +867,17 @@ void CRender::Release()
 
 	for (unsigned int shaderID = 0; shaderID < ST_MAX; ++shaderID)
 	{
-		m_shaders[shaderID].Release();
+		if ( m_shaders[ shaderID ].IsValid() )
+		{
+			m_shaders[ shaderID ].Release();
+		}
 	}
 	for ( unsigned int shaderID = 0; shaderID < LF_MAX; ++shaderID )
 	{
-		m_shaderLight[ shaderID ].Release();
+		if ( m_shaderLight[ shaderID ].IsValid() )
+		{
+			m_shaderLight[ shaderID ].Release();
+		}
 	}
 
 	m_graphicsRS->Release();
@@ -1304,11 +1328,17 @@ void CRender::ReinitShaders()
 
 	for (unsigned int shaderID = 0; shaderID < ST_MAX; ++shaderID)
 	{
-		m_shaders[shaderID].Release();
+		if ( m_shaders[ shaderID ].IsValid() )
+		{
+			m_shaders[ shaderID ].Release();
+		}
 	}
 	for ( unsigned int shaderID = 0; shaderID < LF_MAX; ++shaderID )
 	{
-		m_shaderLight[ shaderID ].Release();
+		if ( m_shaderLight[ shaderID ].IsValid() )
+		{
+			m_shaderLight[ shaderID ].Release();
+		}
 	}
 
 	InitShaders();
@@ -1318,6 +1348,8 @@ void CRender::ReinitShaders()
 void CConstBufferCtx::SetParam( void const* pData, UINT16 const size, EShaderParameters const param ) const
 {
 	UINT16 const paramOffset = m_shader->GetOffset( param );
-	//ASSERT( paramOffset != 0xFFFF );
-	memcpy( m_pConstBuffer + paramOffset, pData, size );
+	if ( paramOffset != 0xFFFF )
+	{
+		memcpy( m_pConstBuffer + paramOffset, pData, size );
+	}
 }

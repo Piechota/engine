@@ -100,7 +100,7 @@ struct Quaternion
 		);
 	}
 
-	static Quaternion FromAngleAxis(float const angle, float const* axis)
+	static Quaternion FromAxisAngle(float const* axis, float const angle)
 	{
 		float const halfAngle = 0.5f * angle;
 		float const sinA = sinf(halfAngle);

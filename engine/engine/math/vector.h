@@ -148,6 +148,8 @@ struct Vec2
 
 		return position;
 	}
+
+	static Vec2 const ONE;
 };
 
 struct Vec2i
