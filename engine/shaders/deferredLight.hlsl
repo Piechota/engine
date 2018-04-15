@@ -98,6 +98,9 @@ float4 psMain( VSToPS input ) : SV_TARGET
 	lightDirVS = LightDirVS;
 #endif
 
+	float3 diffuse = DiffuseTerm( baseColorMetalness.rgb );
+
+#if defined(POINT) || defined(DIRECT)
 	float3 eyeVector = normalize( -positionVS );
 	float3 normLigtDirVS = normalize( lightDirVS );
 	float3 halfVec = normalize( eyeVector + normLigtDirVS );
@@ -107,10 +110,10 @@ float4 psMain( VSToPS input ) : SV_TARGET
 
 	float3 f0 = lerp( 0.04f, baseColorMetalness.rgb, baseColorMetalness.a );
 	float3 specular = SpecularTerm( f0, roughness, normal, eyeVector, halfVec, lightDirVS );
-	float3 diffuse = DiffuseTerm( baseColorMetalness.rgb );
 
 	nol = saturate( dot( normLigtDirVS, normal ) );
 	color = Color * ( att * nol ) * ( specular + diffuse );
+#endif
 
 #ifdef AMBIENT
 	color += diffuse * AmbientColor + emissiveRoughness.rgb;
