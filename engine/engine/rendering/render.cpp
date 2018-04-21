@@ -1,7 +1,7 @@
 #include "render.h"
 #include "constBuffers.h"
 #include "../timer.h"
-#include <math.h>
+#include "../math.h"
 
 extern SViewObject GViewObject;
 CRender GRender;
@@ -240,8 +240,9 @@ void CRender::InitRootSignatures()
 		{ D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 3, 0, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND },
 		{ D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 4, 0, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND },
 		{ D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 5, 0, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND },
+		{ D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 6, 0, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND },
 	};
-	D3D12_ROOT_PARAMETER rootParameters[9];
+	D3D12_ROOT_PARAMETER rootParameters[10];
 
 	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 	rootParameters[0].Descriptor = {0, 0};
@@ -278,6 +279,10 @@ void CRender::InitRootSignatures()
 	rootParameters[8].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
 	rootParameters[8].DescriptorTable = { 1, &descriptorRange[ 5 ] };
 	rootParameters[8].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+
+	rootParameters[9].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	rootParameters[9].DescriptorTable = { 1, &descriptorRange[ 6 ] };
+	rootParameters[9].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
 	D3D12_STATIC_SAMPLER_DESC const samplers[] =
 	{
@@ -369,6 +374,11 @@ void CRender::InitShaders()
 	ERenderTargetBlendStates const objectSimpleDrawRenderTargetsBlend = ERTBS_Disabled;
 	m_shaders[ ST_OBJECT_DRAW_SIMPLE ].InitShader( L"../shaders/objectDrawSimple.hlsl", SSimpleObjectVertexFormat::desc, SSimpleObjectVertexFormat::descNum, 1, objectSimpleDrawRenderTargets, &objectSimpleDrawRenderTargetsBlend, DXGI_FORMAT_D24_UNORM_S8_UINT, EDSS_DepthEnable );
 
+	D3D_SHADER_MACRO objectSimpleTextureMacro[2];
+	memset( objectSimpleTextureMacro, 0, sizeof( objectSimpleTextureMacro ) );
+	objectSimpleTextureMacro[0].Name = "TEXTURE";
+	m_shaders[ ST_OBJECT_DRAW_SIMPLE_TEXTURE ].InitShader( L"../shaders/objectDrawSimple.hlsl", SSimpleObjectVertexFormat::desc, SSimpleObjectVertexFormat::descNum, 1, objectSimpleDrawRenderTargets, &objectSimpleDrawRenderTargetsBlend, DXGI_FORMAT_D24_UNORM_S8_UINT, EDSS_DepthEnable, ERS_Default, objectSimpleTextureMacro );
+
 	DXGI_FORMAT const lightRenderTargets[] = { DXGI_FORMAT_R8G8B8A8_UNORM };
 	ERenderTargetBlendStates const lightRenderTargetsBlend[] = { ERTBS_RGBAdd };
 	D3D_SHADER_MACRO lightDefinitions[ LF_MAX ];
@@ -403,6 +413,10 @@ void CRender::InitShaders()
 	}
 
 	m_shaderLight[LF_LTC].InitShader( L"../shaders/ltcLight.hlsl", SPosVertexFormat::desc, SPosVertexFormat::descNum, 1, lightRenderTargets, lightRenderTargetsBlend );
+
+	lightDefinitions[ 0 ].Name = "TEXTURE";
+	lightDefinitions[ 1 ].Name = nullptr;
+	m_shaderLight[LF_LTC_TEXTURE].InitShader( L"../shaders/ltcLight.hlsl", SPosVertexFormat::desc, SPosVertexFormat::descNum, 1, lightRenderTargets, lightRenderTargetsBlend, DXGI_FORMAT_D24_UNORM_S8_UINT, EDSS_Disabled, ERS_Default, lightDefinitions );
 }
 
 void CRender::Init()
@@ -540,7 +554,6 @@ void CRender::DrawLights( ID3D12GraphicsCommandList * commandList )
 	commandList->SetGraphicsRootDescriptorTable( 7, m_texturesDH.GetGPUDescriptor( T_LTC_AMP ) );
 	commandList->SetGraphicsRootDescriptorTable( 8, m_texturesDH.GetGPUDescriptor( T_LTC_MAT ) );
 
-
 	D3D12_GPU_VIRTUAL_ADDRESS const constBufferStart = m_constBufferResource->GetGPUVirtualAddress();
 
 	UINT const lightNum = m_lightRenderData.Size();
@@ -548,6 +561,13 @@ void CRender::DrawLights( ID3D12GraphicsCommandList * commandList )
 	for ( UINT lightID = 0; lightID < lightNum; ++lightID )
 	{
 		SLightRenderData const& light = m_lightRenderData[ lightID ];
+
+		if ( light.m_texturesNum )
+		{
+			Byte const textureID = m_texturesIDs[ light.m_texturesOffset ];
+			commandList->SetGraphicsRootDescriptorTable( 9, m_texturesDH.GetGPUDescriptor( textureID ) );
+		}
+
 		if ( lightShader != light.m_lightShader )
 		{
 			lightShader = light.m_lightShader;

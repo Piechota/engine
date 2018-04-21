@@ -1,3 +1,6 @@
+
+//https://eheitzresearch.wordpress.com/415-2/
+
 float2 LTC_Coords(float cosTheta, float roughness)
 {
 	float theta = acos(cosTheta);
@@ -144,7 +147,38 @@ void ClipQuadToHorizon(inout float3 L[5], inout int n)
 		L[4] = L[0];
 }
 
+float3 FetchDiffuseFilteredTexture(Texture2D filteredTexture, SamplerState samp, float3 p1_, float3 p2_, float3 p3_, float3 p4_)
+{
+	// area light plane basis
+	float3 V1 = p2_ - p1_;
+	float3 V2 = p4_ - p1_;
+	float3 planeOrtho = (cross(V1, V2));
+	float planeAreaSquared = dot(planeOrtho, planeOrtho);
+	float planeDistxPlaneArea = dot(planeOrtho, p1_);
+	// orthonormal projection of (0,0,0) in area light space
+	float3 P = planeDistxPlaneArea * planeOrtho / planeAreaSquared - p1_;
+
+	// find tex coords of P
+	float dot_V1_V2 = dot(V1,V2);
+	float inv_dot_V1_V1 = 1.0 / dot(V1, V1);
+	float3 V2_ = V2 - V1 * dot_V1_V2 * inv_dot_V1_V1;
+	float2 Puv;
+	Puv.y = dot(V2_, P) / dot(V2_, V2_);
+	Puv.x = dot(V1, P)*inv_dot_V1_V1 - dot_V1_V2*inv_dot_V1_V1*Puv.y ;
+
+	// LOD
+	float d = abs( planeDistxPlaneArea ) / pow( planeAreaSquared, 0.75f );
+
+	//float texSize = 1024.f; //stained glass
+	float texSize = 4048.f; //lena
+	return filteredTexture.SampleLevel(samp, float2(0.25f, 0.25f) + 0.5f * Puv, log(texSize*d)/log(3.0f) ).rgb;
+}
+
+#ifdef TEXTURE
+float3 LTC_Evaluate_Diffuse( Texture2D filteredTexture, SamplerState samp, float3 N, float3 V, float3 P, float3 points[4], bool twoSided )
+#else
 float LTC_Evaluate_Diffuse( float3 N, float3 V, float3 P, float3 points[4], bool twoSided )
+#endif
 {
 	// construct orthonormal basis around N
 	float3 T1, T2;
@@ -164,6 +198,10 @@ float LTC_Evaluate_Diffuse( float3 N, float3 V, float3 P, float3 points[4], bool
 	L[2] = mul(Minv, points[2] - P);
 	L[3] = mul(Minv, points[3] - P);
 	L[4] = L[3]; // avoid warning
+
+#ifdef TEXTURE
+	float3 textureLight = FetchDiffuseFilteredTexture( filteredTexture, samp, L[ 0 ], L[ 1 ], L[ 2 ], L[ 3 ] );
+#endif
 
 	int n;
 	ClipQuadToHorizon(L, n);
@@ -191,10 +229,18 @@ float LTC_Evaluate_Diffuse( float3 N, float3 V, float3 P, float3 points[4], bool
 		// note: negated due to winding order
 		sum = twoSided ? abs( sum ) : max( 0.0, -sum );
 	}
+#ifdef TEXTURE
+	return sum * textureLight;
+#else
 	return sum;
+#endif
 } 
 
+#ifdef TEXTURE
+float3 LTC_Evaluate_Specular( Texture2D filteredTexture, SamplerState samp, float3 N, float3 V, float3 P, float3x3 Minv, float3 points[4], bool twoSided )
+#else
 float LTC_Evaluate_Specular( float3 N, float3 V, float3 P, float3x3 Minv, float3 points[4], bool twoSided )
+#endif
 {
 	// construct orthonormal basis around N
 	float3 T1, T2;
@@ -216,6 +262,10 @@ float LTC_Evaluate_Specular( float3 N, float3 V, float3 P, float3x3 Minv, float3
 	L[3] = mul(Minv, points[3] - P);
 	L[4] = L[3]; // avoid warning
 
+#ifdef TEXTURE
+	float3 textureLight = FetchDiffuseFilteredTexture( filteredTexture, samp, L[ 0 ], L[ 1 ], L[ 2 ], L[ 3 ] );
+#endif
+
 	int n;
 	ClipQuadToHorizon(L, n);
 
@@ -242,7 +292,12 @@ float LTC_Evaluate_Specular( float3 N, float3 V, float3 P, float3x3 Minv, float3
 		// note: negated due to winding order
 		sum = twoSided ? abs( sum ) : max( 0.0, -sum );
 	}
+
+#ifdef TEXTURE
+	return sum * textureLight;
+#else
 	return sum;
+#endif
 }
 
 static const float4 PlaneVertices[] =

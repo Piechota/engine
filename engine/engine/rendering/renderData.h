@@ -52,18 +52,23 @@ POD_TYPE( SShadowRenderData )
 
 enum ELightFlags
 {
-	LF_NONE		= 0,
-	LF_DIRECT	= FLAG( 0 ),
-	LF_POINT	= FLAG( 1 ),
-	LF_AMBIENT	= FLAG( 2 ),
-	LF_LTC		= FLAG( 3 ),
+	LF_NONE			= 0,
+	LF_DIRECT		= FLAG( 0 ),
+	LF_POINT		= FLAG( 1 ),
+	LF_AMBIENT		= FLAG( 2 ),
+	LF_LTC			= FLAG( 3 ),
+	LF_LTC_TEXTURE	= FLAG( 4 ),
 
-	LF_MAX		= FLAG( 4 )
+	LF_MAX			= FLAG( 5 )
 };
 
 struct SLightRenderData
 {
 	D3D12_GPU_VIRTUAL_ADDRESS m_cbOffset;
+
+	UINT8 m_texturesOffset;
+	UINT8 m_texturesNum;
+
 	Byte m_lightShader;
 };
 POD_TYPE(SLightRenderData)

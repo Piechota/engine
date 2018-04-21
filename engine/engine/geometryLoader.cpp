@@ -5,7 +5,7 @@
 #include "utility\fbxsdk.h"
 #include <fstream>
 
-UINT64 const GStaticMeshesVersion = 1;
+UINT64 const GStaticMeshesVersion = 2;
 
 void CGeometryLoader::CreateMeshFromFbx( char const * file )
 {
@@ -94,7 +94,7 @@ void CGeometryLoader::CreateMeshFromFbx( char const * file )
 
 				vertex.m_normal.Set( float( fbxNormal.mData[ 0 ] ), float( fbxNormal.mData[ 1 ] ), float( fbxNormal.mData[ 2 ] ) );
 				vertex.m_tangnet.Set( float( fbxTangent.mData[ 0 ] ), float( fbxTangent.mData[ 1 ] ), float( fbxTangent.mData[ 2 ] ) );
-				vertex.m_uv.Set( float( fbxUV.mData[ 0 ] ), float( fbxUV.mData[ 1 ] ) );
+				vertex.m_uv.Set( float( fbxUV.mData[ 0 ] ), 1.f - float( fbxUV.mData[ 1 ] ) );
 
 				UINT16 newVertexID = 0;
 				UINT16 const verticesNum = UINT16( vertices.Size() );

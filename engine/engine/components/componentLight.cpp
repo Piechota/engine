@@ -3,7 +3,6 @@
 
 void CComponentLightManager::FillRenderData() const
 {
-	SLightRenderData lightRenderData;
 	Matrix4x4 const worldToView = GViewObject.m_camera.m_worldToView;
 
 	{
@@ -14,6 +13,7 @@ void CComponentLightManager::FillRenderData() const
 		}
 
 		SLightRenderData lightRenderData;
+		lightRenderData.m_texturesNum = 0;
 		lightRenderData.m_lightShader = dirLightFlags;
 
 		Vec3 const directionLightVS = Math::MulVectorOrtho( m_directLightDir, worldToView );
@@ -29,6 +29,7 @@ void CComponentLightManager::FillRenderData() const
 		GRender.AddLightRenderData( lightRenderData );
 	}
 
+	SLightRenderData lightRenderData;
 	UINT const renderComponentsNum = m_renderComponents.Size();
 	GRender.LightRenderDataReserveNext( renderComponentsNum );
 
@@ -38,6 +39,14 @@ void CComponentLightManager::FillRenderData() const
 		SComponentLight const light = GetComponentNoCheck( m_renderComponents[ i ].m_lightID );
 
 		lightRenderData.m_lightShader = light.m_lightShader;
+		lightRenderData.m_texturesNum = 0;
+
+		if ( light.m_lightShader & LF_LTC_TEXTURE )
+		{
+			lightRenderData.m_texturesNum = 1;
+			lightRenderData.m_texturesOffset = GRender.GetTexturesOffset();
+			GRender.AddTextureID( light.m_textureID );
+		}
 
 		Matrix4x4 const objectToWorld = Matrix4x4::GetTranslateRotationSize( transform.m_position, transform.m_rotation, transform.m_scale );
 		Matrix4x4 tObjectToView = Math::Mul( objectToWorld, worldToView );
