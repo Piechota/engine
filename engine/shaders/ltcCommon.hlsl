@@ -164,14 +164,14 @@ float3 FetchDiffuseFilteredTexture(Texture2D filteredTexture, SamplerState samp,
 	float3 V2_ = V2 - V1 * dot_V1_V2 * inv_dot_V1_V1;
 	float2 Puv;
 	Puv.y = dot(V2_, P) / dot(V2_, V2_);
-	Puv.x = dot(V1, P)*inv_dot_V1_V1 - dot_V1_V2*inv_dot_V1_V1*Puv.y ;
+	Puv.x = dot(V1, P)*inv_dot_V1_V1 - dot_V1_V2*inv_dot_V1_V1*Puv.y;
 
 	// LOD
-	float d = abs( planeDistxPlaneArea ) / pow( planeAreaSquared, 0.75f );
+	float d = abs( planeDistxPlaneArea ) / pow( planeAreaSquared, 0.75f ); //	r/sqrt(A)
 
-	//float texSize = 1024.f; //stained glass
-	float texSize = 4048.f; //lena
-	return filteredTexture.SampleLevel(samp, float2(0.25f, 0.25f) + 0.5f * Puv, log(texSize*d)/log(3.0f) ).rgb;
+	float texSize = 1024.f; //stained glass
+	//float texSize = 4048.f; //lena
+	return filteredTexture.SampleLevel(samp, float2(0.25f, 0.25f) + 0.5f * Puv, log(texSize*d*d) ).rgb; // log(texSize*d)/log(3.0f) ????????????
 }
 
 #ifdef TEXTURE

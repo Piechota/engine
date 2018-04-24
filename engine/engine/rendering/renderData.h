@@ -57,9 +57,11 @@ enum ELightFlags
 	LF_POINT		= FLAG( 1 ),
 	LF_AMBIENT		= FLAG( 2 ),
 	LF_LTC			= FLAG( 3 ),
-	LF_LTC_TEXTURE	= FLAG( 4 ),
+	LF_TEXTURE		= FLAG( 4 ),
 
-	LF_MAX			= FLAG( 5 )
+	LF_MAX			= FLAG( 5 ),
+
+	LF_LTC_TEXTURE	= LF_LTC | LF_TEXTURE,
 };
 
 struct SLightRenderData

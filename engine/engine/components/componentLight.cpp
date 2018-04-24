@@ -41,7 +41,7 @@ void CComponentLightManager::FillRenderData() const
 		lightRenderData.m_lightShader = light.m_lightShader;
 		lightRenderData.m_texturesNum = 0;
 
-		if ( light.m_lightShader & LF_LTC_TEXTURE )
+		if ( light.m_lightShader & LF_TEXTURE )
 		{
 			lightRenderData.m_texturesNum = 1;
 			lightRenderData.m_texturesOffset = GRender.GetTexturesOffset();

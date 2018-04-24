@@ -37,6 +37,7 @@ namespace Math
 	Vec4 Mul( Vec4 const& vector, Matrix4x4 const& matrix );
 	Vec3 MulVectorOrtho( Vec3 const& vector, Matrix4x4 const& matrix );
 	Vec3 MulPositionOrtho( Vec3 const& vector, Matrix4x4 const& matrix );
+	Vec3 MulPositionOrtho( float const* const vector, Matrix4x4 const& matrix );
 	Matrix4x4 Mul( Matrix4x4 const& matrixA, Matrix4x4 const& matrixB );
 	float Snap( float const value, float const snap );
 	Vec3 Snap( Vec3 const value, Vec3 const snap );

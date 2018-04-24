@@ -179,6 +179,34 @@ struct Matrix4x4
 		m_a23 = x;
 	}
 
+	void Transpose( Matrix4x4& outMatrix ) const
+	{
+		float x;
+		x = m_a01;
+		outMatrix.m_a01 = m_a10;
+		outMatrix.m_a10 = x;
+
+		x = m_a02;
+		outMatrix.m_a02 = m_a20;
+		outMatrix.m_a20 = x;
+
+		x = m_a03;
+		outMatrix.m_a03 = m_a30;
+		outMatrix.m_a30 = x;
+
+		x = m_a12;
+		outMatrix.m_a12 = m_a21;
+		outMatrix.m_a21 = x;
+
+		x = m_a13;
+		outMatrix.m_a13 = m_a31;
+		outMatrix.m_a31 = x;
+
+		x = m_a32;
+		outMatrix.m_a32 = m_a23;
+		outMatrix.m_a23 = x;
+	}
+
 	//https://stackoverflow.com/a/1148405
 	bool Inverse()
 	{

@@ -54,6 +54,16 @@ Vec3 Math::MulPositionOrtho(Vec3 const& vector, Matrix4x4 const& matrix)
 	);
 }
 
+Vec3 Math::MulPositionOrtho(float const* const vector, Matrix4x4 const& matrix)
+{
+	return Vec3
+	(
+		vector[ 0 ] * matrix.m_a00 + vector[ 1 ] * matrix.m_a10 + vector[ 2 ] * matrix.m_a20 + matrix.m_a30
+		, vector[ 0 ] * matrix.m_a01 + vector[ 1 ] * matrix.m_a11 + vector[ 2 ] * matrix.m_a21 + matrix.m_a31
+		, vector[ 0 ] * matrix.m_a02 + vector[ 1 ] * matrix.m_a12 + vector[ 2 ] * matrix.m_a22 + matrix.m_a32
+	);
+}
+
 Matrix4x4 Math::Mul(Matrix4x4 const& matrixA, Matrix4x4 const& matrixB)
 {
 	return Matrix4x4

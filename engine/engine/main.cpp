@@ -63,52 +63,46 @@ void GaussianKelner2D( float* const dst, float const weight, int const radius )
 	}
 }
 
-void TestTextureMipMap2D( Byte* const dstBegin, UINT const dstWidth, UINT const dstHeight, Byte* const srcBegin, UINT const srcWidth, UINT const srcHeight, UINT const inTexKernelRadius )
+void TestTextureMipMap2D( Byte* const dstBegin, int const dstWidth, int const dstHeight, Byte* const srcBegin, int const srcWidth, int const srcHeight, int const inTexKernelRadius )
 {
-	UINT const margSize = dstWidth / 4;
+	int const margSize = dstWidth / 4;
 
 	int const texCoordX0 = margSize;
 	int const texCoordY0 = margSize;
 	int const texCoordX1 = dstWidth - margSize;
 	int const texCoordY1 = dstHeight - margSize;
 
-	UINT const maxKernelDim = 2 * (4 * margSize + 1);
-	UINT const maxKernelRadius = ( maxKernelDim - 1 ) / 2;
+	int const maxKernelDim = max( 4 * margSize + 1, 2 * inTexKernelRadius + 1 );
+	int const maxKernelRadius = ( maxKernelDim - 1 ) / 2;
 
 	float* kernel = new float[ maxKernelDim * maxKernelDim ];
-	GaussianKelner2D( kernel, 9000000000.f, int( maxKernelRadius ) );
+	GaussianKelner2D( kernel, 500.f, int( maxKernelRadius ) );
 
 	for ( int y = 0; y < dstHeight; ++y )
 	{
-		UINT const distanceY = max( 0, max( texCoordY0 - y, y - texCoordY1 + 1 ) );
+		int const distanceY = max( 0, max( texCoordY0 - y, y - texCoordY1 + 1 ) );
 		for ( int x = 0; x < dstWidth; ++x )
 		{
-			UINT const distanceX = max( 0, max( texCoordX0 - x, x - texCoordX1 + 1 ) );
-			UINT const distance = max( distanceX, distanceY );
+			int const distanceX = max( 0, max( texCoordX0 - x, x - texCoordX1 + 1 ) );
+			int const distance = max( distanceX, distanceY );
 
-			UINT const kernelRadius = max( inTexKernelRadius, int(float(distance * 3.f)) );
-			UINT const kernelDim = 2 * kernelRadius + 1;
-			UINT const kernelSize = kernelDim * kernelDim;
+			int const kernelRadius = max( inTexKernelRadius, int(float(distance * 2.f)) );
+			int const kernelDim = 2 * kernelRadius + 1;
+			int const kernelSize = kernelDim * kernelDim;
 
-			UINT const kernelOffset = maxKernelRadius - kernelRadius;
+			int const kernelOffset = maxKernelRadius - kernelRadius;
 
-			UINT const sampleX0 = max( texCoordX0, x < kernelRadius ? 0 : ( x - kernelRadius ) );
-			UINT const sampleY0 = max( texCoordY0, y < kernelRadius ? 0 : ( y - kernelRadius ) );
+			int const sampleX0 = ( x < kernelRadius ? 0 : ( x - kernelRadius ) );
+			int const sampleY0 = ( y < kernelRadius ? 0 : ( y - kernelRadius ) );
 
-			UINT const sampleX1 = min( texCoordX1, min( dstWidth, x + kernelRadius + 1 ) );
-			UINT const sampleY1 = min( texCoordY1, min( dstHeight, y + kernelRadius + 1 ) );
+			int const sampleX1 = ( min( dstWidth, x + kernelRadius + 1 ) );
+			int const sampleY1 = ( min( dstHeight, y + kernelRadius + 1 ) );
 
-			UINT const kernelX0 = kernelRadius + sampleX0 - x;
-			UINT const kernelY0 = kernelRadius + sampleY0 - y;
+			int const kernelX0 = kernelRadius + sampleX0 - x;
+			int const kernelY0 = kernelRadius + sampleY0 - y;
 
-			UINT const kernelX1 = kernelRadius + sampleX1 - x;
-			UINT const kernelY1 = kernelRadius + sampleY1 - y;
-
-			UINT const srcSampleX0 = sampleX0 - margSize;
-			UINT const srcSampleY0 = sampleY0 - margSize;
-
-			UINT const srcSampleX1 = sampleX1 - margSize;
-			UINT const srcSampleY1 = sampleY1 - margSize;
+			int const kernelX1 = kernelRadius + sampleX1 - x;
+			int const kernelY1 = kernelRadius + sampleY1 - y;
 
 			float sum = 0.f;
 
@@ -116,25 +110,22 @@ void TestTextureMipMap2D( Byte* const dstBegin, UINT const dstWidth, UINT const 
 			float accG = 0.f;
 			float accB = 0.f;
 
-			for ( UINT currentY = srcSampleY0; currentY < srcSampleY1; ++currentY )
+			for ( int currentY = sampleY0; currentY < sampleY1; ++currentY )
 			{
-				for ( UINT currentX = srcSampleX0; currentX < srcSampleX1; ++currentX )
+				int const srcSampleY = max( 0, min( srcWidth - 1, currentY - texCoordY0 ) );
+				for ( int currentX = sampleX0; currentX < sampleX1; ++currentX )
 				{
-					int const kernelCoordX = ( int( kernelOffset + kernelX0 + currentX - srcSampleX0 ) - int( maxKernelRadius ) );
-					int const kernelCoordY = ( int( kernelOffset + kernelY0 + currentY - srcSampleY0 ) - int( maxKernelRadius ) );
+					int const srcSampleX = max( 0, min( srcWidth - 1, currentX - texCoordX0 ) );
 
-					//if ( kernelCoordX * kernelCoordX + kernelCoordY * kernelCoordY <= kernelRadius * kernelRadius )
-					{
-						float const srcR = float( srcBegin[ ( currentY * srcWidth + currentX ) * 4 + 0 ] );
-						float const srcG = float( srcBegin[ ( currentY * srcWidth + currentX ) * 4 + 1 ] );
-						float const srcB = float( srcBegin[ ( currentY * srcWidth + currentX ) * 4 + 2 ] );
-						float const kernelVal = kernel[ ( kernelOffset + kernelY0 + currentY - srcSampleY0 ) * maxKernelDim + kernelOffset + kernelX0 + currentX - srcSampleX0 ];
-						accR += srcR * kernelVal;
-						accG += srcG * kernelVal;
-						accB += srcB * kernelVal;
+					float const srcR = float( srcBegin[ ( srcSampleY * srcWidth + srcSampleX ) * 4 + 0 ] );
+					float const srcG = float( srcBegin[ ( srcSampleY * srcWidth + srcSampleX ) * 4 + 1 ] );
+					float const srcB = float( srcBegin[ ( srcSampleY * srcWidth + srcSampleX ) * 4 + 2 ] );
+					float const kernelVal = kernel[ ( kernelOffset + kernelY0 + currentY - sampleY0 ) * maxKernelDim + kernelOffset + kernelX0 + currentX - sampleX0 ];
+					accR += srcR * kernelVal;
+					accG += srcG * kernelVal;
+					accB += srcB * kernelVal;
 
-						sum += kernelVal;
-					}
+					sum += kernelVal;
 				}
 			}
 
@@ -148,17 +139,17 @@ void TestTextureMipMap2D( Byte* const dstBegin, UINT const dstWidth, UINT const 
 	delete[] kernel;
 }
 
-void TestTextureMipMap1D( Byte* const dstBegin, UINT const dstWidth, UINT const dstHeight, Byte* const srcBegin, UINT const srcWidth, UINT const srcHeight, UINT const inTexKernelRadius )
+void TestTextureMipMap1D( Byte* const dstBegin, int const dstWidth, int const dstHeight, Byte* const srcBegin, int const srcWidth, int const srcHeight, int const inTexKernelRadius )
 {
-	UINT const margSize = dstWidth / 4;
+	int const margSize = dstWidth / 4;
 
 	int const texCoordX0 = margSize;
 	int const texCoordY0 = margSize;
 	int const texCoordX1 = dstWidth - margSize;
 	int const texCoordY1 = dstHeight - margSize;
 
-	UINT const maxKernelDim = max( 4 * margSize + 1, 2 * inTexKernelRadius + 1 );
-	UINT const maxKernelRadius = ( maxKernelDim - 1 ) / 2;
+	int const maxKernelDim = max( 4 * margSize + 1, 2 * inTexKernelRadius + 1 );
+	int const maxKernelRadius = ( maxKernelDim - 1 ) / 2;
 
 	float* kernel = new float[ maxKernelDim ];
 	GaussianKelner1D( kernel, 500.f, int( maxKernelRadius ) );
@@ -167,28 +158,28 @@ void TestTextureMipMap1D( Byte* const dstBegin, UINT const dstWidth, UINT const 
 
 	for ( int y = 0; y < dstHeight; ++y )
 	{
-		UINT const distanceY = max( 0, max( texCoordY0 - y, y - texCoordY1 + 1 ) );
+		int const distanceY = max( 0, max( texCoordY0 - y, y - texCoordY1 + 1 ) );
 		for ( int x = 0; x < dstWidth; ++x )
 		{
-			UINT const distanceX = max( 0, max( texCoordX0 - x, x - texCoordX1 + 1 ) );
-			UINT const distance = max( distanceX, distanceY );
+			int const distanceX = max( 0, max( texCoordX0 - x, x - texCoordX1 + 1 ) );
+			int const distance = max( distanceX, distanceY );
 
-			UINT const kernelRadius = max( inTexKernelRadius, int(float(distance * 2.f)) );
-			UINT const kernelDim = 2 * kernelRadius + 1;
+			int const kernelRadius = max( inTexKernelRadius, int(float(distance * 2.f)) );
+			int const kernelDim = 2 * kernelRadius + 1;
 
-			UINT const kernelOffset = maxKernelRadius - kernelRadius;
+			int const kernelOffset = maxKernelRadius - kernelRadius;
 
-			UINT const sampleX0 = max( texCoordX0, x < kernelRadius ? 0 : ( x - kernelRadius ) );
-			UINT const sampleY0 = min( texCoordY1 - 1, max( texCoordY0, y ) );
+			int const sampleX0 = ( x < kernelRadius ? 0 : ( x - kernelRadius ) );
+			int const sampleY0 = y;// min( texCoordY1 - 1, max( texCoordY0, y ) );
 
-			UINT const sampleX1 = min( texCoordX1, min( dstWidth, x + kernelRadius + 1 ) );
+			int const sampleX1 = ( min( dstWidth, x + kernelRadius + 1 ) );
 
-			UINT const kernelX0 = kernelRadius + sampleX0 - x;
+			int const kernelX0 = kernelRadius + sampleX0 - x;
 
-			UINT const srcSampleX0 = sampleX0 - margSize;
-			UINT const srcSampleY0 = sampleY0 - margSize;
-
-			UINT const srcSampleX1 = sampleX1 - margSize;
+			//UINT const srcSampleX0 = sampleX0 - margSize;
+			//UINT const srcSampleY0 = sampleY0 - margSize;
+			//
+			//UINT const srcSampleX1 = sampleX1 - margSize;
 
 			float sum = 0.f;
 
@@ -196,17 +187,20 @@ void TestTextureMipMap1D( Byte* const dstBegin, UINT const dstWidth, UINT const 
 			float accG = 0.f;
 			float accB = 0.f;
 
-			for ( UINT currentX = srcSampleX0; currentX < srcSampleX1; ++currentX )
+			for ( int currentX = sampleX0; currentX < sampleX1; ++currentX )
 			{
-					float const srcR = float( srcBegin[ ( srcSampleY0 * srcWidth + currentX ) * 4 + 0 ] );
-					float const srcG = float( srcBegin[ ( srcSampleY0 * srcWidth + currentX ) * 4 + 1 ] );
-					float const srcB = float( srcBegin[ ( srcSampleY0 * srcWidth + currentX ) * 4 + 2 ] );
-					float const kernelVal = kernel[ kernelOffset + kernelX0 + currentX - srcSampleX0 ];
-					accR += srcR * kernelVal;
-					accG += srcG * kernelVal;
-					accB += srcB * kernelVal;
+				int const srcSampleX = min( srcWidth - 1, max( 0, currentX - texCoordX0 ) );
+				int const srcSampleY = min( srcHeight - 1, max( 0, sampleY0 - texCoordY0 ) );
 
-					sum += kernelVal;
+				float const srcR = float( srcBegin[ ( srcSampleY * srcWidth + srcSampleX ) * 4 + 0 ] );
+				float const srcG = float( srcBegin[ ( srcSampleY * srcWidth + srcSampleX ) * 4 + 1 ] );
+				float const srcB = float( srcBegin[ ( srcSampleY * srcWidth + srcSampleX ) * 4 + 2 ] );
+				float const kernelVal = kernel[ kernelOffset + kernelX0 + currentX - sampleX0 ];
+				accR += srcR * kernelVal;
+				accG += srcG * kernelVal;
+				accB += srcB * kernelVal;
+
+				sum += kernelVal;
 			}
 
 			blurHorizontal[ ( x * dstHeight + y ) * 3 + 0 ] = Byte( min( 255.f, accR / sum ) );
@@ -217,24 +211,24 @@ void TestTextureMipMap1D( Byte* const dstBegin, UINT const dstWidth, UINT const 
 
 	for ( int y = 0; y < dstHeight; ++y )
 	{
-		UINT const distanceY = max( 0, max( texCoordY0 - y, y - texCoordY1 + 1 ) );
+		int const distanceY = max( 0, max( texCoordY0 - y, y - texCoordY1 + 1 ) );
 		for ( int x = 0; x < dstWidth; ++x )
 		{
-			UINT const distanceX = max( 0, max( texCoordX0 - x, x - texCoordX1 + 1 ) );
-			UINT const distance = max( distanceX, distanceY );
+			int const distanceX = max( 0, max( texCoordX0 - x, x - texCoordX1 + 1 ) );
+			int const distance = max( distanceX, distanceY );
 
-			UINT const kernelRadius = max( inTexKernelRadius, int(float(distance * 2.f)) );
-			UINT const kernelDim = 2 * kernelRadius + 1;
+			int const kernelRadius = max( inTexKernelRadius, int(float(distance * 2.f)) );
+			int const kernelDim = 2 * kernelRadius + 1;
 
-			UINT const kernelOffset = maxKernelRadius - kernelRadius;
+			int const kernelOffset = maxKernelRadius - kernelRadius;
 
-			UINT const sampleX0 = (  x < kernelRadius ? 0 : ( x - kernelRadius ) );
-			UINT const sampleY0 = y;
+			int const sampleX0 = (  x < kernelRadius ? 0 : ( x - kernelRadius ) );
+			int const sampleY0 = y;
 
-			UINT const sampleX1 = ( min( dstWidth, x + kernelRadius + 1 ) );
+			int const sampleX1 = ( min( dstWidth, x + kernelRadius + 1 ) );
 
-			UINT const kernelX0 = kernelRadius + sampleX0 - x;
-			UINT const kernelX1 = kernelRadius + sampleX1 - x;
+			int const kernelX0 = kernelRadius + sampleX0 - x;
+			int const kernelX1 = kernelRadius + sampleX1 - x;
 
 			float sum = 0.f;
 
@@ -242,7 +236,7 @@ void TestTextureMipMap1D( Byte* const dstBegin, UINT const dstWidth, UINT const 
 			float accG = 0.f;
 			float accB = 0.f;
 
-			for ( UINT currentX = sampleX0; currentX < sampleX1; ++currentX )
+			for ( int currentX = sampleX0; currentX < sampleX1; ++currentX )
 			{
 				float const srcR = float( blurHorizontal[ ( sampleY0 * dstWidth + currentX ) * 3 + 0 ] );
 				float const srcG = float( blurHorizontal[ ( sampleY0 * dstWidth + currentX ) * 3 + 1 ] );
@@ -444,10 +438,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
 		L"../content/textures/pbr_test_m.dds",
 		L"../content/textures/rainDrop.png",
 		L"../content/textures/snow.png",
-		L"../content/textures/lena.dds",
-		L"../content/textures/lena_test.dds",
-		//L"../content/textures/stained_glass.dds",
-		//L"../content/textures/stained_glass_test.dds",
+		//L"../content/textures/lena.dds",
+		//L"../content/textures/lena_test.dds",
+		L"../content/textures/stained_glass.dds",
+		L"../content/textures/stained_glass_test.dds",
 	};
 	CT_ASSERT( ARRAYSIZE( textures ) == T_MAX );
 
@@ -455,8 +449,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
 	{
 		DirectX::TexMetadata texMeta;
 		DirectX::ScratchImage image;
-		CheckResult( DirectX::LoadFromDDSFile( L"../content/textures/lena.dds", DirectX::DDS_FLAGS_NONE, &texMeta, image ) );
-		//CheckResult( DirectX::LoadFromDDSFile( L"../content/textures/stained_glass.dds", DirectX::DDS_FLAGS_NONE, &texMeta, image ) );
+		//CheckResult( DirectX::LoadFromDDSFile( L"../content/textures/lena.dds", DirectX::DDS_FLAGS_NONE, &texMeta, image ) );
+		CheckResult( DirectX::LoadFromDDSFile( L"../content/textures/stained_glass.dds", DirectX::DDS_FLAGS_NONE, &texMeta, image ) );
 
 		UINT const mipLevels = texMeta.mipLevels;
 		DirectX::ScratchImage dstImage;
@@ -465,11 +459,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
 		for ( UINT i = 0; i < mipLevels; ++i )
 		{
 			UINT const size = image.GetImage( i, 0, 0 )->width;
-			TestTextureMipMap1D( dstImage.GetImage( i, 0, 0 )->pixels, size << 1, size << 1, image.GetImage( i, 0, 0 )->pixels, size, size, i );
+			TestTextureMipMap2D( dstImage.GetImage( i, 0, 0 )->pixels, size << 1, size << 1, image.GetImage( i, 0, 0 )->pixels, size, size, i );
 		}
 
-		DirectX::SaveToDDSFile( dstImage.GetImages(), dstImage.GetImageCount(), dstImage.GetMetadata(), 0, L"../content/textures/lena_test.dds" );
-		//DirectX::SaveToDDSFile( dstImage.GetImages(), dstImage.GetImageCount(), dstImage.GetMetadata(), 0, L"../content/textures/stained_glass_test.dds" );
+		//DirectX::SaveToDDSFile( dstImage.GetImages(), dstImage.GetImageCount(), dstImage.GetMetadata(), 0, L"../content/textures/lena_test.dds" );
+		DirectX::SaveToDDSFile( dstImage.GetImages(), dstImage.GetImageCount(), dstImage.GetMetadata(), 0, L"../content/textures/stained_glass_test.dds" );
 	}
 #endif
 
@@ -565,6 +559,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
 
 		SComponentTransform& testObjectTransform = GComponentTransformManager.GetComponent( ltcLightTest );
 		//testObjectTransform.m_rotation = testObjectTransform.m_rotation * Quaternion::FromAxisAngle( Vec3::UP.data, GTimer.GameDelta() );
+		//Vec2 v( 1.f, -1.f );
+		//v.Normalize();
+		//float const dist = cos( GTimer.GetSeconds( 1.5f * GTimer.TimeFromStart() ) );
+		//
+		//testObjectTransform.m_position.y = 0.5f + v.x * dist;
+		//testObjectTransform.m_position.z = 10.f + v.y * dist;
 
 		DrawDebugInfo();
 
