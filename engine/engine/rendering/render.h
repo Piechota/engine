@@ -77,7 +77,7 @@ private:
 
 	ID3D12Fence*					m_fence;
 	HANDLE							m_fenceEvent;
-	UINT							m_fenceValue[FRAME_NUM];
+	UINT							m_fenceValue;
 
 	D3D12_VIEWPORT					m_viewport;
 	D3D12_RECT						m_scissorRect;
