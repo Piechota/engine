@@ -3,6 +3,14 @@
 
 void CComponentLightManager::FillRenderData() const
 {
+	float constexpr planeVertices[] =
+	{
+		-1.f, 0.f, 1.f,
+		1.f, 0.f, 1.f,
+		1.f, 0.f, -1.f,
+		-1.f, 0.f, -1.f 
+	};
+
 	Matrix4x4 const worldToView = GViewObject.m_camera.m_worldToView;
 
 	{
@@ -33,6 +41,7 @@ void CComponentLightManager::FillRenderData() const
 	UINT const renderComponentsNum = m_renderComponents.Size();
 	GRender.LightRenderDataReserveNext( renderComponentsNum );
 
+	Vec4 areaVertices[ 4 ];
 	for ( UINT i = 0; i < renderComponentsNum; ++i )
 	{
 		SComponentTransform const transform = GComponentTransformManager.GetComponentNoCheck( m_renderComponents[ i ].m_transformID );
@@ -49,17 +58,23 @@ void CComponentLightManager::FillRenderData() const
 		}
 
 		Matrix4x4 const objectToWorld = Matrix4x4::GetTranslateRotationSize( transform.m_position, transform.m_rotation, transform.m_scale );
-		Matrix4x4 tObjectToView = Math::Mul( objectToWorld, worldToView );
-		tObjectToView.Transpose();
+		Matrix4x4 const objectToView = Math::Mul( objectToWorld, worldToView );
 
+		if ( light.m_lightShader & LF_LTC )
+		{
+			for ( UINT i = 0; i < 4; ++i )
+			{
+				areaVertices[ i ] = Math::MulPositionOrtho( &planeVertices[ i * 3 ], objectToView );
+			}
+		}
 		Vec3 const positionVS = Math::MulPositionOrtho( transform.m_position, worldToView );
 		Vec2 const attenuation( 1.f / light.m_radius, light.m_fade );
 
 		CConstBufferCtx const cbCtx = GRender.GetLightConstBufferCtx( lightRenderData.m_cbOffset, light.m_lightShader );
-		cbCtx.SetParam( &tObjectToView,				3 * sizeof( Vec4 ),						EShaderParameters::ObjectToView );
 		cbCtx.SetParam( &positionVS,				sizeof( positionVS ),					EShaderParameters::LightPos );
-		cbCtx.SetParam( &light.m_color,				sizeof( light.m_color ),				EShaderParameters::Color );
 		cbCtx.SetParam( &attenuation,				sizeof( attenuation ),					EShaderParameters::Attenuation );
+		cbCtx.SetParam( &light.m_color,				sizeof( light.m_color ),				EShaderParameters::Color );
+		cbCtx.SetParam( areaVertices,				sizeof( areaVertices ),					EShaderParameters::Vertices );
 
 		GRender.AddLightRenderData( lightRenderData );
 	}

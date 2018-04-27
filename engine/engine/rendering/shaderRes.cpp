@@ -19,6 +19,7 @@ LPCSTR ShaderParamsNames[] =
 	"Tiling",
 	"BoxesNum",
 	"Size",
+	"Vertices",
 };
 CT_ASSERT( (ARRAYSIZE( ShaderParamsNames ) == ( UINT(EShaderParameters::SP_MAX) )) );
 

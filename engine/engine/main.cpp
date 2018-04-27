@@ -470,7 +470,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
 	GRender.Init();
 	GComponentLightManager.SetDirectLightColor( Vec3::ZERO );
 	GComponentLightManager.SetDirectLightDir( Vec3( 0.f, 1.f, 1.f ).GetNormalized() );
-	GComponentLightManager.SetAmbientLightColor( Vec3::ZERO );
+	GComponentLightManager.SetAmbientLightColor( Vec3( 0.2f, 0.2f, 0.2f ) );
 
 	GRender.BeginLoadResources(ARRAYSIZE(textures));
 
@@ -558,13 +558,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
 		GInputManager.Tick();
 
 		SComponentTransform& testObjectTransform = GComponentTransformManager.GetComponent( ltcLightTest );
-		//testObjectTransform.m_rotation = testObjectTransform.m_rotation * Quaternion::FromAxisAngle( Vec3::UP.data, GTimer.GameDelta() );
-		//Vec2 v( 1.f, -1.f );
-		//v.Normalize();
-		//float const dist = cos( GTimer.GetSeconds( 1.5f * GTimer.TimeFromStart() ) );
-		//
-		//testObjectTransform.m_position.y = 0.5f + v.x * dist;
-		//testObjectTransform.m_position.z = 10.f + v.y * dist;
+		testObjectTransform.m_rotation = testObjectTransform.m_rotation * Quaternion::FromAxisAngle( Vec3::UP.data, GTimer.GameDelta() );
 
 		DrawDebugInfo();
 

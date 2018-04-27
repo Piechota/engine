@@ -26,5 +26,6 @@
     <FxCompile Include="ltcLight.hlsl" />
     <FxCompile Include="objectDrawSimple.hlsl" />
     <FxCompile Include="ltcCommon.hlsl" />
+    <FxCompile Include="lightCommon.hlsl" />
   </ItemGroup>
 </Project>

@@ -17,6 +17,7 @@ enum class EShaderParameters : Byte
 	Tiling,
 	BoxesNum,
 	Size,
+	Vertices,
 
 	SP_MAX
 };

@@ -1,42 +1,30 @@
+#define HIGH_QUALITY
+//#define TWO_SIDED
+
 #include "common.hlsl"
 #include "ltcCommon.hlsl"
 
 cbuffer objectBuffer : register(b1)
 {
-	float4x3 ObjectToView;
 	float3 Color;
+	float3 Vertices[ 4 ];
 }
 
 Texture2D DiffTex			: register( t0 );
 Texture2D NormalTex			: register( t1 );
 Texture2D EmissiveRoughness : register( t2 );
 Texture2D DepthTex			: register( t3 );
-Texture2D LTCAmp			: register( t4 );
-Texture2D LTCMat			: register( t5 );
-#ifdef TEXTURE
-Texture2D FilteredTexture	: register( t6 );
-#endif
-
-SamplerState Sampler : register(s2);
 
 struct VSToPS
 {
-
 	float4 m_position : SV_POSITION;
 	float2 m_uv : TEXCOORD;
-	nointerpolation float3 verticesVS[ 4 ] : TEXCOORD1;
 };
 
 void vsMain( float2 position : POSITION, out VSToPS output )
 {
 	output.m_position = float4( position, 0.f, 1.f );
 	output.m_uv = position;
-
-	[unroll]
-	for ( uint i = 0; i < 4; ++i )
-	{
-		output.verticesVS[ i ] = mul( PlaneVertices[ i ], ObjectToView ).xyz;
-	}
 }
 
 float4 psMain( VSToPS input ) : SV_TARGET
@@ -52,19 +40,26 @@ float4 psMain( VSToPS input ) : SV_TARGET
 	float3 normal = normalize( normalVS.xyz * 2.f - 1.f );
 	float roughness = emissiveRoughness.a;
 
-	float2 ltcUV = LTC_Coords( dot( normal, eyeVector ), roughness );
-	float3x3 minV = LTC_Matrix( LTCMat, Sampler, ltcUV );
+	float2 ltcUV = LTC_Coords( saturate(dot( normal, eyeVector )), roughness );
+	float3x3 ltcMat = LTC_Matrix( ltcUV );
 	float2 schlick = LTCAmp.Sample( Sampler, ltcUV ).xy;
 
-#ifdef TEXTURE
-	float3 ltcSpecular = LTC_Evaluate_Specular( FilteredTexture, Sampler, normal, eyeVector, positionVS, minV, input.verticesVS, false );
-	float3 ltcDiffuse = LTC_Evaluate_Diffuse( FilteredTexture, Sampler, normal, eyeVector, positionVS, input.verticesVS, false );
-#else
-	float ltcSpecular = LTC_Evaluate_Specular( normal, eyeVector, positionVS, minV, input.verticesVS, false );
-	float ltcDiffuse = LTC_Evaluate_Diffuse( normal, eyeVector, positionVS, input.verticesVS, false );
-#endif
+	// construct orthonormal basis around N
+	float3 T1, T2;
+	T1 = normalize(eyeVector - normal*dot(eyeVector, normal));
+	T2 = cross(normal, T1);
 
-	float3 color = Color * (( baseColorMetalness.rgb * ltcDiffuse )+( ltcSpecular * (f0 * schlick.x + (1.f - f0) * schlick.y ))) / ( 2.f * M_PI );
+	// rotate area light in (T1, T2, R) basis
+	float3x3 tn = float3x3( T1, T2, normal );
+	ltcMat = mul(ltcMat, tn);
+
+	float3 ltcSpecular = LTC_Evaluate( normal, eyeVector, positionVS, ltcMat, Vertices, false );
+	float3 ltcDiffuse = LTC_Evaluate( normal, eyeVector, positionVS, tn, Vertices, true );
+
+	float3 diffuse = DiffuseTerm( baseColorMetalness.rgb ) * (1.f/ M_PI) * ltcDiffuse;
+	float3 specular = ltcSpecular * ( f0 * schlick.x + ( 1.f - f0 ) * schlick.y );
+
+	float3 color = Color * (diffuse + specular) / ( 2.f * M_PI );
 
 	return float4( color, 1.f );
 }
