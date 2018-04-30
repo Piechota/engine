@@ -9,6 +9,7 @@ enum EShaderType
 	ST_SDF_DRAW,
 	ST_ENV_PARTICLE,
 	ST_RECT_DRAW,
+	ST_LTC_TEXTURE,
 
 	ST_MAX
 };
@@ -28,31 +29,6 @@ enum EGeometry
 	G_PLANE,
 
 	G_MAX
-};
-
-enum ETextures
-{
-	T_SDF_FONT_512,
-	T_BLACK,
-	T_LTC_AMP,
-	T_LTC_MAT,
-	T_SPACESHIP,
-	T_SPACESHIP_N,
-	T_SPACESHIP_E,
-	T_SPACESHIP_S,
-	T_METAL_D,
-	T_METAL_N,
-	T_METAL_S,
-	T_PBR_TEST_B,
-	T_PBR_TEST_N,
-	T_PBR_TEST_R,
-	T_PBR_TEST_M,
-	T_RAIN_DROP,
-	T_SNOW,
-	T_LENA,
-	T_LENA_TEST,
-
-	T_MAX
 };
 
 enum ESoundEffectType

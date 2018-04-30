@@ -39,7 +39,7 @@ public:
 	void Add( T const& object )
 	{
 		ASSERT( m_size < SIZE );
-		m_data[ m_size ] = object;
+		IsPOD< T >::Create( &m_data[ m_size ], &object );
 		++m_size;
 	}
 	void Add()
@@ -53,6 +53,17 @@ public:
 		ASSERT( 0 < m_size );
 		IsPOD< T >::Destroy( &m_data[ m_size - 1 ] );
 		--m_size;
+	}
+
+	T PopBack()
+	{
+		ASSERT( 0 < m_size );
+		T returnVal;
+
+		IsPOD<T>::Create( &returnVal, &m_data[ m_size - 1 ] );
+		EraseBack();
+
+		return returnVal;
 	}
 
 	void Clear()
@@ -113,7 +124,6 @@ public:
 	{
 		return m_size;
 	}
-
 	void operator=( TStaticArray<T, SIZE> const& other )
 	{
 		IsPOD< T >::Destroy( m_data, m_size );

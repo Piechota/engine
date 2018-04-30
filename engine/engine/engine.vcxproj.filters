@@ -78,6 +78,12 @@
     <ClCompile Include="rendering\environmentParticleManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="math\mathUtilities.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="resources\resources.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="headers.h">
@@ -179,9 +185,6 @@
     <ClInclude Include="rendering\vertexFormats.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="rendering\texture.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="rendering\environmentParticleManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -192,6 +195,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="rendering\constBuffers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resources\texture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resources\resourceManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

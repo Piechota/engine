@@ -227,6 +227,17 @@ public:
 		--m_size;
 	}
 
+	T PopBack()
+	{
+		ASSERT( 0 < m_size );
+		T returnVal;
+
+		IsPOD<T>::Create( &returnVal, &m_data[ m_size - 1 ] );
+		EraseBack();
+
+		return returnVal;
+	}
+
 	void Clear()
 	{
 		IsPOD< T >::Destroy( m_data, m_size );

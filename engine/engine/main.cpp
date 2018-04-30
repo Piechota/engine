@@ -5,6 +5,8 @@
 #include "input.h"
 #include "../DirectXTex/DirectXTex.h"
 
+#include "resources/resourceManager.h"
+#include "resources/texture.h"
 #include "geometryLoader.h"
 
 #include <Windows.h>
@@ -32,36 +34,6 @@ INT64 GFramesProf[ GFrameProfNum ];
 long GFrameProfID = 0;
 #endif
 
-void GaussianKelner1D( float* const dst, float const weight, int const radius )
-{
-	int const dim = 2 * radius + 1;
-
-	float const d0 = 1.f / ( weight * sqrt( 2.f * M_PI ) );
-	float const d1 = 1.f / ( 2.f * weight * weight );
-
-	for ( int x = -radius; x <= radius; ++x )
-	{
-		float const dist = float( x ) * float( x );
-		dst[ x + radius ] = exp( -dist * d1 ) * d0;
-	}
-}
-
-void GaussianKelner2D( float* const dst, float const weight, int const radius )
-{
-	int const dim = 2 * radius + 1;
-
-	float const d0 = 1.f / ( weight * sqrt( 2.f * M_PI ) );
-	float const d1 = 1.f / ( 2.f * weight * weight );
-
-	for ( int y = -radius; y <= radius; ++y )
-	{
-		for ( int x = -radius; x <= radius; ++x )
-		{
-			float const dist = float( x ) * float( x ) + float( y ) * float( y );
-			dst[ (y + radius) * dim + x + radius ] = exp( -dist * d1 ) * d0;
-		}
-	}
-}
 
 void TestTextureMipMap2D( Byte* const dstBegin, int const dstWidth, int const dstHeight, Byte* const srcBegin, int const srcWidth, int const srcHeight, int const inTexKernelRadius )
 {
@@ -76,7 +48,7 @@ void TestTextureMipMap2D( Byte* const dstBegin, int const dstWidth, int const ds
 	int const maxKernelRadius = ( maxKernelDim - 1 ) / 2;
 
 	float* kernel = new float[ maxKernelDim * maxKernelDim ];
-	GaussianKelner2D( kernel, 500.f, int( maxKernelRadius ) );
+	Math::GaussianKelner2D( kernel, 500.f, int( maxKernelRadius ) );
 
 	for ( int y = 0; y < dstHeight; ++y )
 	{
@@ -152,7 +124,7 @@ void TestTextureMipMap1D( Byte* const dstBegin, int const dstWidth, int const ds
 	int const maxKernelRadius = ( maxKernelDim - 1 ) / 2;
 
 	float* kernel = new float[ maxKernelDim ];
-	GaussianKelner1D( kernel, 500.f, int( maxKernelRadius ) );
+	Math::GaussianKelner1D( kernel, 500.f, int( maxKernelRadius ) );
 
 	Byte* const blurHorizontal = new Byte[ dstWidth * 3 * dstHeight ];
 
@@ -294,11 +266,11 @@ void InitGame()
 	testObjectStaticMesh.m_geometryInfoID = G_BOX;
 	testObjectStaticMesh.m_layer = RL_OPAQUE;
 	testObjectStaticMesh.m_shaderID = 0;
-	testObjectStaticMesh.m_textureID[ 0 ] = T_PBR_TEST_B;
-	testObjectStaticMesh.m_textureID[ 1 ] = T_PBR_TEST_N;
-	testObjectStaticMesh.m_textureID[ 2 ] = T_PBR_TEST_R;
-	testObjectStaticMesh.m_textureID[ 3 ] = T_PBR_TEST_M;
-	testObjectStaticMesh.m_textureID[ 4 ] = T_BLACK;
+	testObjectStaticMesh.m_textureID[ 0 ] = GTextureResources[ L"../content/textures/pbr_test_b.dds" ];
+	testObjectStaticMesh.m_textureID[ 1 ] = GTextureResources[ L"../content/textures/pbr_test_n.dds" ];
+	testObjectStaticMesh.m_textureID[ 2 ] = GTextureResources[ L"../content/textures/pbr_test_r.dds" ];
+	testObjectStaticMesh.m_textureID[ 3 ] = GTextureResources[ L"../content/textures/pbr_test_m.dds" ];
+	testObjectStaticMesh.m_textureID[ 4 ] = GTextureResources[ L"../content/textures/common/black.png" ];
 	GComponentStaticMeshManager.RegisterRenderComponents( testObjectTransformHandle.m_index, testObjectStaticMeshHandle.m_index );
 
 	testEntityID = GEntityManager.CreateEntity();
@@ -320,11 +292,11 @@ void InitGame()
 	ltcLightStaticMesh.m_geometryInfoID = G_PLANE;
 	ltcLightStaticMesh.m_layer = RL_UNLIT;
 	ltcLightStaticMesh.m_shaderID = Byte(ST_OBJECT_DRAW_SIMPLE);
-	memset( ltcLightStaticMesh.m_textureID, UINT8_MAX, sizeof( ltcLightStaticMesh.m_textureID ) );
+	memset( ltcLightStaticMesh.m_textureID, 0, sizeof( ltcLightStaticMesh.m_textureID ) );
 	GComponentStaticMeshManager.RegisterRenderComponents( ltcLightTest.m_index, testObjectStaticMeshHandle.m_index );
 
 	ltcLight.m_color.Set( 2.f, 2.f, 2.f );
-	ltcLight.m_textureID = UINT8_MAX;
+	ltcLight.m_textureID = 0;
 	ltcLight.m_lightShader = Byte( ELightFlags::LF_LTC );
 	GComponentLightManager.RegisterRenderComponents( ltcLightTest.m_index, testLtcLightComponentHandle.m_index );
 
@@ -347,12 +319,12 @@ void InitGame()
 	ltcLightTexStaticMesh.m_geometryInfoID = G_PLANE;
 	ltcLightTexStaticMesh.m_layer = RL_UNLIT;
 	ltcLightTexStaticMesh.m_shaderID = Byte(ST_OBJECT_DRAW_SIMPLE_TEXTURE);
-	memset( ltcLightTexStaticMesh.m_textureID, UINT8_MAX, sizeof( ltcLightTexStaticMesh.m_textureID ) );
-	ltcLightTexStaticMesh.m_textureID[ 0 ] = T_LENA;
+	memset( ltcLightTexStaticMesh.m_textureID, 0, sizeof( ltcLightTexStaticMesh.m_textureID ) );
+	ltcLightTexStaticMesh.m_textureID[ 0 ] = GTextureResources[ L"../content/textures/stained_glass.dds" ];
 	GComponentStaticMeshManager.RegisterRenderComponents( ltcLightTest.m_index, testObjectStaticMeshHandle.m_index );
 
 	ltcLightTex.m_color.Set( 2.f, 2.f, 2.f );
-	ltcLightTex.m_textureID = T_LENA_TEST;
+	ltcLightTex.m_textureID = GTextureResources[ L"../content/textures/stained_glass_test.dds" ];
 	ltcLightTex.m_lightShader = Byte( ELightFlags::LF_LTC_TEXTURE );
 	GComponentLightManager.RegisterRenderComponents( ltcLightTest.m_index, testLtcLightComponentHandle.m_index );
 }
@@ -423,8 +395,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
 	{
 		L"../content/textures/sdf_font_512.png",
 		L"../content/textures/common/black.png",
-		L"../content/textures/common/ltc_amp.dds",
-		L"../content/textures/common/ltc_mat.dds",
 		L"../content/textures/spaceship_d.png",
 		L"../content/textures/spaceship_n.png",
 		L"../content/textures/spaceship_e.png",
@@ -443,7 +413,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
 		L"../content/textures/stained_glass.dds",
 		L"../content/textures/stained_glass_test.dds",
 	};
-	CT_ASSERT( ARRAYSIZE( textures ) == T_MAX );
 
 #if defined( CREATE_LTC_TEX )
 	{
@@ -468,6 +437,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
 #endif
 
 	GRender.Init();
+
 	GComponentLightManager.SetDirectLightColor( Vec3::ZERO );
 	GComponentLightManager.SetDirectLightDir( Vec3( 0.f, 1.f, 1.f ).GetNormalized() );
 	GComponentLightManager.SetAmbientLightColor( Vec3( 0.2f, 0.2f, 0.2f ) );
@@ -482,24 +452,23 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
 		GGeometryInfo[ meshID ].m_indicesNum = geometryData.m_indices.Size();
 	}
 
-	for (unsigned int texutreID = 0; texutreID < ARRAYSIZE(textures); ++texutreID)
+	for (unsigned int textureID = 0; textureID < ARRAYSIZE(textures); ++textureID)
 	{
 		DirectX::TexMetadata texMeta;
 		DirectX::ScratchImage image;
-		if ( DirectX::LoadFromWICFile( textures[ texutreID ], DirectX::WIC_FLAGS_NONE, &texMeta, image ) != S_OK )
+		if ( DirectX::LoadFromWICFile( textures[ textureID ], DirectX::WIC_FLAGS_NONE, &texMeta, image ) != S_OK )
 		{
-			CheckResult( DirectX::LoadFromDDSFile( textures[ texutreID ], DirectX::DDS_FLAGS_NONE, &texMeta, image ) );
+			CheckResult( DirectX::LoadFromDDSFile( textures[ textureID ], DirectX::DDS_FLAGS_NONE, &texMeta, image ) );
 		}
 
-		STexture texture;
-		texture.m_data = image.GetPixels();
+		STextureInfo texture;
 		texture.m_width = UINT(texMeta.width);
 		texture.m_height = UINT(texMeta.height);
 		texture.m_format = texMeta.format;
 		texture.m_mipLevels = Byte(texMeta.mipLevels);
 
 		ASSERT( texture.m_format != DXGI_FORMAT_UNKNOWN );
-		GRender.LoadResource(texture);
+		GTextureResources[ textures[ textureID ] ] = GRender.LoadResource( texture, image.GetPixels() );
 	}
 
 	GRender.EndLoadResources();
@@ -527,6 +496,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
 	}
 
 	GRender.WaitForResourcesLoad();
+
+	//STexture testTexture;
+	//testTexture.m_width = 512;
+	//testTexture.m_height = 512;
+	//testTexture.m_mipLevels = 10;
+	//GRender.Test( T_LENA, L"../content/textures/stained_glass_test_2.dds", testTexture );
 
 	MSG msg = { 0 };
 	bool run = true;

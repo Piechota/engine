@@ -20,6 +20,7 @@ private:
 
 	TArray< STextRenderInfo > m_textRenderInfos;
 	tDynGeometryID m_dynGeometryID;
+	UINT16 m_fontTexture;
 
 public:
 	void Init();

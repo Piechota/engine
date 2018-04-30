@@ -294,7 +294,7 @@ float3 FetchDiffuseFilteredTexture(Texture2D filteredTexture, SamplerState samp,
 
 	float texSize = 1024.f; //stained glass
 	//float texSize = 4048.f; //lena
-	return filteredTexture.SampleLevel(samp, float2(0.25f, 0.25f) + 0.5f * Puv, log(texSize*d*d) ).rgb; // log(texSize*d)/log(3.0f) ????????????
+	return filteredTexture.SampleLevel(samp, 0.125f + 0.75f * Puv, log(texSize*d*d) ).rgb; // log(texSize*d)/log(3.0f) ????????????
 }
 
 float3 LTC_Evaluate( in float3 N, in float3 V, in float3 P, in float3x3 mat, in float3 points[4], in bool diffuse )

@@ -197,6 +197,7 @@
     <ClCompile Include="components\componentPhysics.cpp" />
     <ClCompile Include="components\componentsManagers.cpp" />
     <ClCompile Include="components\componentStaticMesh.cpp" />
+    <ClCompile Include="math\mathUtilities.cpp" />
     <ClCompile Include="rendering\dynamicGeometryManager.cpp" />
     <ClCompile Include="entity.cpp" />
     <ClCompile Include="entityManager.cpp" />
@@ -210,6 +211,7 @@
     <ClCompile Include="rendering\render.cpp" />
     <ClCompile Include="rendering\renderConstant.cpp" />
     <ClCompile Include="rendering\shaderRes.cpp" />
+    <ClCompile Include="resources\resources.cpp" />
     <ClCompile Include="soundEngine.cpp" />
     <ClCompile Include="rendering\textRenderManager.cpp" />
     <ClCompile Include="rendering\vertexFormats.cpp" />
@@ -242,6 +244,7 @@
     <ClInclude Include="physics\physicsUtilities.h" />
     <ClInclude Include="rendering\renderData.h" />
     <ClInclude Include="rendering\shaderRes.h" />
+    <ClInclude Include="resources\resourceManager.h" />
     <ClInclude Include="staticArray.h" />
     <ClInclude Include="viewObject.h" />
     <ClInclude Include="math.h" />
@@ -249,7 +252,7 @@
     <ClInclude Include="rendering\renderConstant.h" />
     <ClInclude Include="soundEngine.h" />
     <ClInclude Include="rendering\textRenderManager.h" />
-    <ClInclude Include="rendering\texture.h" />
+    <ClInclude Include="resources\texture.h" />
     <ClInclude Include="timer.h" />
     <ClInclude Include="types.h" />
     <ClInclude Include="rendering\vertexFormats.h" />

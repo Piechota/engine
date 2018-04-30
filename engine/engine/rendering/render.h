@@ -1,12 +1,13 @@
 #pragma once
 
 #include "../headers.h"
+#include "../resources/resourceManager.h"
 #include "renderConstant.h"
 #include "vertexFormats.h"
 #include "geometry.h"
 #include "descriptorHeap.h"
 #include "shaderRes.h"
-#include "texture.h"
+#include "../resources/texture.h"
 #include "textRenderManager.h"
 #include "environmentParticleManager.h"
 
@@ -54,7 +55,8 @@ private:
 	enum
 	{
 		FRAME_NUM = 3,
-		MAX_OBJECTS = 2048
+		MAX_OBJECTS = 2048,
+		MAX_TEXTURES = 2048,
 	};
 
 	enum EGlobalBufferBuffers
@@ -66,6 +68,14 @@ private:
 		GBB_RAIN_DEPTH,
 
 		GBB_MAX,
+	};
+
+	enum ECommonTexuters
+	{
+		LTC_AMP,
+		LTC_MAT,
+
+		COMMON_TEXTURE_MAX
 	};
 
 #ifdef _DEBUG
@@ -91,6 +101,8 @@ private:
 	ID3D12GraphicsCommandList*		m_graphicsCL;
 
 	ID3D12CommandQueue*				m_computeCQ;
+	ID3D12CommandAllocator*			m_computeCA;
+	ID3D12GraphicsCommandList*		m_computeCL;
 
 	IDXGISwapChain3*				m_swapChain;
 
@@ -102,18 +114,27 @@ private:
 	SRenderFrameData				m_frameData[FRAME_NUM];
 
 	ID3D12RootSignature*			m_graphicsRS;
+	ID3D12RootSignature*			m_ltcTextureRS;
 	CShaderRes						m_shaders[ST_MAX];
 	CShaderRes						m_shaderLight[LF_MAX];
 
-	SDescriptorHeap					m_texturesDH;
+	SDescriptorHeap								m_texturesDH;
+	TArray< UINT16 >		m_texturesDHFree;
 
 	ID3D12Resource*					m_fullscreenTriangleRes;
 	D3D12_VERTEX_BUFFER_VIEW		m_fullscreenTriangleView;
 
 	SDescriptorsOffsets				m_globalBufferDescriptorsOffsets[ GBB_MAX ];
 
-	TArray< SGeometry >						m_geometryResources;
-	TArray< ID3D12Resource* >				m_texturesResources;
+	TArray< SGeometry >				m_geometryResources;
+
+	UINT16											m_texturesDescriptorHeapOffset[ MAX_TEXTURES ];
+	STextureInfo									m_texturesInfo[ MAX_TEXTURES ];
+	ID3D12Resource*									m_texturesResources[ MAX_TEXTURES ];
+	TArray< UINT16 >		m_texturesFreeIDs;
+	UINT16											m_commonTexturesDescriptorHeapOffset[ COMMON_TEXTURE_MAX ];
+
+
 	TArray< ID3D12Resource* >				m_uploadResources;
 	TArray< D3D12_RESOURCE_BARRIER >		m_resourceBarrier;
 	TStaticArray< Byte, 4 * MAX_OBJECTS>	m_texturesIDs;
@@ -140,11 +161,14 @@ private:
 	void InitSwapChain();
 	void InitRenderTargets();
 	void InitDescriptorHeaps();
+	void InitDescriptorHeap( SDescriptorHeap& heap, UINT const descriptorsNum, D3D12_DESCRIPTOR_HEAP_TYPE const type, D3D12_DESCRIPTOR_HEAP_FLAGS const flags );
 
+	void InitGraphicsRootSignature();
+	void InitLTCTextureRootSignature();
 	void InitRootSignatures();
 
-	void ResizeDescriptorHeap( SDescriptorHeap& descriptorHeap, UINT const size );
 	void CreateFullscreenTriangleRes();
+	void CreateCommonTextures();
 
 	void InitShaders();
 	void DrawFullscreenTriangle( ID3D12GraphicsCommandList* commandList );
@@ -165,12 +189,14 @@ public:
 	ID3D12RootSignature* GetMainRS() { return m_graphicsRS; }
 	ID3D12Device* GetDevice() { return m_device; }
 
+	//void Test( Byte const textureID, wchar_t* const fileName, STexture texture  );
+
 	Byte AddGeometry( SGeometry const& geometry );
 	SGeometry& GetGeometry( Byte const geometryID );
 	void ReleaseGeometry( Byte const geometryID );
 
 	void BeginLoadResources(unsigned int const textureNum);
-	void LoadResource(STexture const& texture);
+	UINT16 LoadResource(STextureInfo const& texture, Byte const* const data );
 	Byte LoadResource(SGeometryData const& geometryData);
 	void EndLoadResources();
 	void WaitForResourcesLoad();

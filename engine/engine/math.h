@@ -33,7 +33,7 @@ namespace Math
 		return min( maxValue, max( minValue, a ) );
 	}
 
-	Matrix3x3 Mul(Matrix3x3 const& a, Matrix3x3 const& b);
+	Matrix3x3 Mul( Matrix3x3 const& a, Matrix3x3 const& b );
 	Vec4 Mul( Vec4 const& vector, Matrix4x4 const& matrix );
 	Vec3 MulVectorOrtho( Vec3 const& vector, Matrix4x4 const& matrix );
 	Vec3 MulPositionOrtho( Vec3 const& vector, Matrix4x4 const& matrix );
@@ -44,5 +44,9 @@ namespace Math
 	Vec3 Snap( Vec3 const value, float const snap );
 	float Clamp01( float const value );
 	Vec3 Abs( Vec3 const value );
+
+
+	void GaussianKelner1D( float* const dst, float const weight, int const radius );
+	void GaussianKelner2D( float* const dst, float const weight, int const radius );
 }
 

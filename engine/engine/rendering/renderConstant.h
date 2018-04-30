@@ -32,6 +32,7 @@ extern UINT GDescriptorHandleIncrementSize[];
 extern D3D12_HEAP_PROPERTIES const GHeapPropertiesGPUOnly;
 extern D3D12_HEAP_PROPERTIES const GHeapPropertiesDefault;
 extern D3D12_HEAP_PROPERTIES const GHeapPropertiesUpload;
+extern D3D12_HEAP_PROPERTIES const GHeapPropertiesReadback;
 
 
 extern Byte const GDXGIFormatsBitsSize[];

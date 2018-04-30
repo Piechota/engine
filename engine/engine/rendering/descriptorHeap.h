@@ -1,10 +1,7 @@
 #pragma once
-struct SDescriptorHeap
+struct SDescriptorHeap : public D3D12_DESCRIPTOR_HEAP_DESC
 {
 	ID3D12DescriptorHeap* m_pDescriptorHeap;
-	UINT m_descriptorsNum;
-	D3D12_DESCRIPTOR_HEAP_TYPE m_type;
-	D3D12_DESCRIPTOR_HEAP_FLAGS m_flags;
 
 	void Release()
 	{
@@ -19,7 +16,7 @@ struct SDescriptorHeap
 		ASSERT( m_pDescriptorHeap );
 
 		D3D12_CPU_DESCRIPTOR_HANDLE descHandle = m_pDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-		descHandle.ptr += offset * GDescriptorHandleIncrementSize[ m_type ];
+		descHandle.ptr += offset * GDescriptorHandleIncrementSize[ Type ];
 
 		return descHandle;
 	}
@@ -29,7 +26,27 @@ struct SDescriptorHeap
 		ASSERT( m_pDescriptorHeap );
 
 		D3D12_GPU_DESCRIPTOR_HANDLE descHandle = m_pDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
-		descHandle.ptr += offset * GDescriptorHandleIncrementSize[ m_type ];
+		descHandle.ptr += offset * GDescriptorHandleIncrementSize[ Type ];
+
+		return descHandle;
+	}
+
+	D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescriptorScaled( UINT const offset )
+	{
+		ASSERT( m_pDescriptorHeap );
+
+		D3D12_CPU_DESCRIPTOR_HANDLE descHandle = m_pDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+		descHandle.ptr += offset;
+
+		return descHandle;
+	}
+
+	D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorScaled( UINT const offset )
+	{
+		ASSERT( m_pDescriptorHeap );
+
+		D3D12_GPU_DESCRIPTOR_HANDLE descHandle = m_pDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
+		descHandle.ptr += offset;
 
 		return descHandle;
 	}

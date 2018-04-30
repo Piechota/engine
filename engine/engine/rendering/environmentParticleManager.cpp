@@ -48,6 +48,8 @@ void CEnvironmentParticleManager::Init( UINT const initParticleNum, UINT const b
 	m_particleShaderInit.InitComputeShader( L"../shaders/environmentParticleInit.hlsl", m_particleRS );
 
 	InitParticles( initParticleNum, boxesNum, boxesSize );
+
+	m_texture = GTextureResources[ L"../content/textures/snow.png" ];
 }
 
 void CEnvironmentParticleManager::AllocateBuffers()
@@ -171,7 +173,7 @@ void CEnvironmentParticleManager::InitParticles(UINT const initParticleNum, UINT
 		m_particleCL->SetComputeRootConstantBufferView( 1, constBufferAddress );
 		m_particleCL->SetComputeRootUnorderedAccessView( 2, m_particlesGPU->GetGPUVirtualAddress() );
 		
-		m_particleCL->Dispatch( ( m_particlesNum + 63 ) & ~63, 1, 1 );
+		m_particleCL->Dispatch( ( ( m_particlesNum + 63 ) & ~63 ) / 64, 1, 1 );
 		
 		m_particleCL->Close();
 		
@@ -231,7 +233,7 @@ void CEnvironmentParticleManager::FillRenderData()
 		m_renderData.m_texturesOffset = GRender.GetTexturesOffset();
 		m_renderData.m_texturesNum = 1;
 		//GRender.AddTextureID( T_RAIN_DROP );
-		GRender.AddTextureID( T_SNOW );
+		GRender.AddTextureID( m_texture );
 		//Vec2 const uvScale( 1.f, 1.f );
 
 		Vec3 const cameraPosition = GComponentCameraManager.GetMainCameraPosition();

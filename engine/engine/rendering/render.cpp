@@ -2,10 +2,115 @@
 #include "constBuffers.h"
 #include "../timer.h"
 #include "../math.h"
+#include "../../DirectXTex/DirectXTex.h"
 
 extern SViewObject GViewObject;
 CRender GRender;
 
+/*void CRender::Test( Byte const textureID, wchar_t* const fileName, STexture texture )
+{
+	struct SConstBuffer
+	{
+		float m_invDstTextureSize;
+		float m_dstTextureSize;
+		float m_mipMap;
+		int m_maxKernelRadius;
+	} cbuffer;
+
+	D3D12_RESOURCE_DESC descTexture = {};
+	descTexture.DepthOrArraySize = 1;
+	descTexture.SampleDesc.Count = 1;
+	descTexture.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+	descTexture.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	descTexture.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+	descTexture.MipLevels = texture.m_mipLevels;
+	descTexture.Width = texture.m_width;
+	descTexture.Height = texture.m_height;
+	descTexture.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+
+	ID3D12Resource* textureRes;
+	CheckResult(m_device->CreateCommittedResource(&GHeapPropertiesReadback, D3D12_HEAP_FLAG_NONE, &descTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, nullptr, IID_PPV_ARGS(&textureRes)));
+
+	D3D12_RESOURCE_DESC descResource = {};
+	descResource.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	descResource.Alignment = 0;
+	descResource.Height = 1;
+	descResource.DepthOrArraySize = 1;
+	descResource.MipLevels = 1;
+	descResource.Format = DXGI_FORMAT_UNKNOWN;
+	descResource.SampleDesc.Count = 1;
+	descResource.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	descResource.Flags = D3D12_RESOURCE_FLAG_NONE;
+	descResource.Width = (texture.m_width + 1) * (texture.m_width + 1) * 4;
+
+	ID3D12Resource* kernelRes;
+	CheckResult(m_device->CreateCommittedResource(&GHeapPropertiesUpload, D3D12_HEAP_FLAG_NONE, &descResource, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&kernelRes)));
+
+	float* kernel = nullptr;
+	CheckResult(kernelRes->Map(0, nullptr, (void**)(&kernel)));
+
+	Math::GaussianKelner2D( kernel, 500.f, texture.m_width / 2 );
+	kernelRes->Unmap( 0, nullptr );
+
+	UINT const mipMap0 = m_texturesDH.m_descriptorsNum;
+
+	for ( UINT i = 0; i < texture.m_mipLevels; ++i )
+	{
+		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+		srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		srvDesc.Texture2D.MipLevels = -1;
+		srvDesc.Texture2D.MostDetailedMip = i;
+		srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+
+		m_device->CreateShaderResourceView(textureRes, &srvDesc, m_texturesDH.GetCPUDescriptor(mipMap0 + i));
+	}
+
+	DirectX::ScratchImage dstImage;
+	dstImage.Initialize2D( DXGI_FORMAT_R8G8B8A8_UNORM, texture.m_width, texture.m_width, 1, texture.m_mipLevels );
+
+	m_computeCA->Reset();
+	m_computeCL->Reset( m_computeCA, m_shaders[ST_LTC_TEXTURE].GetPSO() );
+	m_computeCL->SetDescriptorHeaps(1, &m_texturesDH.m_pDescriptorHeap);
+	m_computeCL->SetComputeRootSignature( m_ltcTextureRS );
+	m_computeCL->SetComputeRootDescriptorTable( 1, m_texturesDH.GetGPUDescriptor( textureID ) );
+	m_computeCL->SetComputeRootShaderResourceView( 3, kernelRes->GetGPUVirtualAddress() );
+
+	for ( UINT i = 0; i < texture.m_mipLevels; ++i )
+	{
+		UINT const mipmapSize = texture.m_width >> i;
+		UINT const groupNum = ( ( mipmapSize + 15 ) & ~15 ) / 16;
+
+		cbuffer.m_dstTextureSize = float( mipmapSize );
+		cbuffer.m_invDstTextureSize = 1.f / (cbuffer.m_dstTextureSize-1.f);
+		cbuffer.m_maxKernelRadius = mipmapSize / 2;
+		cbuffer.m_mipMap = float( i );
+
+		D3D12_GPU_VIRTUAL_ADDRESS constBufferAddress;
+		GRender.SetConstBuffer( constBufferAddress, ( Byte* )&cbuffer, sizeof( cbuffer ) );
+		m_computeCL->SetComputeRootConstantBufferView( 0, constBufferAddress );
+		m_computeCL->SetComputeRootDescriptorTable( 2, m_texturesDH.GetGPUDescriptor( mipMap0 + i ) );
+
+		m_computeCL->Dispatch( groupNum, groupNum, 1 );
+	}
+
+	m_computeCL->Close();
+
+	m_computeCQ->ExecuteCommandLists( 1, (ID3D12CommandList* const*)&m_computeCL );
+	WaitForComputeQueue();
+
+	for ( UINT i = 0; i < texture.m_mipLevels; ++i )
+	{
+		UINT const mipmapSize = texture.m_width >> i;
+		CheckResult( textureRes->ReadFromSubresource( dstImage.GetImage( i, 0, 0 )->pixels, mipmapSize * 4, mipmapSize * mipmapSize * 4, i, nullptr ) );
+	}
+
+	DirectX::SaveToDDSFile( dstImage.GetImages(), dstImage.GetImageCount(), dstImage.GetMetadata(), 0, fileName );
+
+	kernelRes->Release();
+	textureRes->Release();
+}
+*/
 void CRender::InitCommands()
 {
 	D3D12_COMMAND_QUEUE_DESC descCQ = {};
@@ -33,10 +138,17 @@ void CRender::InitCommands()
 	m_copyCL->SetName(L"CopyCommandList");
 	CheckResult(m_copyCL->Close());
 
-	descCQ.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+	descCQ.Flags = D3D12_COMMAND_QUEUE_FLAG_DISABLE_GPU_TIMEOUT;
 	descCQ.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
 	CheckResult(m_device->CreateCommandQueue(&descCQ, IID_PPV_ARGS(&m_computeCQ)));
 	m_computeCQ->SetName(L"ComputeCommandQueue");
+
+	CheckResult(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_COMPUTE, IID_PPV_ARGS(&m_computeCA)));
+	m_computeCA->SetName(L"ComputeCommandAllocator");
+
+	CheckResult(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_COMPUTE, m_computeCA, nullptr, IID_PPV_ARGS(&m_computeCL)));
+	m_computeCL->SetName(L"ComputeCommandList");
+	CheckResult(m_computeCL->Close());
 }
 
 void CRender::InitFrameData()
@@ -94,7 +206,6 @@ void CRender::InitSwapChain()
 
 void CRender::InitRenderTargets()
 {
-	ResizeDescriptorHeap( m_renderTargetDH, FRAME_NUM + GBB_MAX );
 	UINT rtvID = 0;
 	for (; rtvID < FRAME_NUM; ++rtvID)
 	{
@@ -150,8 +261,6 @@ void CRender::InitRenderTargets()
 	m_globalBufferBuffers[ GBB_EMISSIVE_ROUGHNESS ]->SetName( L"GBufferEmissive" );
 	++rtvID;
 
-	ResizeDescriptorHeap( m_depthBuffertDH, 2 );
-
 	D3D12_RESOURCE_DESC depthDesc = {};
 	depthDesc.DepthOrArraySize = 1;
 	depthDesc.SampleDesc.Count = 1;
@@ -205,6 +314,22 @@ void CRender::InitRenderTargets()
 	rainDepthViewDesc.Texture2D.MipSlice = 0;
 
 	m_device->CreateDepthStencilView( m_globalBufferBuffers[ GBB_RAIN_DEPTH ], &rainDepthViewDesc, m_depthBuffertDH.GetCPUDescriptor( 1 ) );
+
+	DXGI_FORMAT const globalBuffersForamts[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R10G10B10A2_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_R32_FLOAT };
+	CT_ASSERT( ARRAYSIZE( globalBuffersForamts ) == GBB_MAX );
+
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.Texture2D.MipLevels = 1;
+	srvDesc.Texture2D.MostDetailedMip = 0;
+
+	for ( UINT i = 0; i < GBB_MAX; ++i )
+	{
+		m_globalBufferDescriptorsOffsets[ i ].m_srvOffset = m_texturesDHFree.PopBack();
+		srvDesc.Format = globalBuffersForamts[ i ];
+		m_device->CreateShaderResourceView(m_globalBufferBuffers[ i ], &srvDesc, m_texturesDH.GetCPUDescriptorScaled(m_globalBufferDescriptorsOffsets[ i ].m_srvOffset) );
+	}
 }
 
 void CRender::InitDescriptorHeaps()
@@ -214,23 +339,28 @@ void CRender::InitDescriptorHeaps()
 		GDescriptorHandleIncrementSize[ dhIncSize ] = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE(dhIncSize));
 	}
 
-	m_renderTargetDH.m_pDescriptorHeap = nullptr;
-	m_renderTargetDH.m_descriptorsNum = 0;
-	m_renderTargetDH.m_flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-	m_renderTargetDH.m_type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+	InitDescriptorHeap( m_renderTargetDH, FRAME_NUM + GBB_MAX, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE );
+	InitDescriptorHeap( m_depthBuffertDH, 2, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE );
+	InitDescriptorHeap( m_texturesDH, MAX_TEXTURES, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE );
 
-	m_depthBuffertDH.m_pDescriptorHeap = nullptr;
-	m_depthBuffertDH.m_descriptorsNum = 0;
-	m_depthBuffertDH.m_flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-	m_depthBuffertDH.m_type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
-
-	m_texturesDH.m_pDescriptorHeap = nullptr;
-	m_texturesDH.m_descriptorsNum = 0;
-	m_texturesDH.m_flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	m_texturesDH.m_type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	m_texturesDHFree.Resize( MAX_TEXTURES );
+	for ( UINT16 i = 0; i < MAX_TEXTURES; ++i )
+	{
+		m_texturesDHFree[ i ] = ( MAX_TEXTURES - i - 1 ) * GDescriptorHandleIncrementSize[ D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV ];
+	}		
 }
 
-void CRender::InitRootSignatures()
+void CRender::InitDescriptorHeap( SDescriptorHeap& heap, UINT const descriptorsNum, D3D12_DESCRIPTOR_HEAP_TYPE const type, D3D12_DESCRIPTOR_HEAP_FLAGS const flags )
+{
+	heap.m_pDescriptorHeap = nullptr;
+	heap.NumDescriptors = descriptorsNum;
+	heap.Type = type;
+	heap.Flags = flags;
+
+	CheckResult(m_device->CreateDescriptorHeap(&heap, IID_PPV_ARGS(&heap.m_pDescriptorHeap)));
+}
+
+void CRender::InitGraphicsRootSignature()
 {
 	D3D12_DESCRIPTOR_RANGE descriptorRange[] =
 	{
@@ -287,8 +417,8 @@ void CRender::InitRootSignatures()
 	D3D12_STATIC_SAMPLER_DESC const samplers[] =
 	{
 		{
-		/*Filter*/				D3D12_FILTER_MIN_MAG_MIP_POINT
-		/*AddressU*/			,D3D12_TEXTURE_ADDRESS_MODE_WRAP
+			/*Filter*/				D3D12_FILTER_MIN_MAG_MIP_POINT
+			/*AddressU*/			,D3D12_TEXTURE_ADDRESS_MODE_WRAP
 		/*AddressV*/			,D3D12_TEXTURE_ADDRESS_MODE_WRAP
 		/*AddressW*/			,D3D12_TEXTURE_ADDRESS_MODE_WRAP
 		/*MipLODBias*/			,0
@@ -302,8 +432,8 @@ void CRender::InitRootSignatures()
 		/*ShaderVisibility*/	,D3D12_SHADER_VISIBILITY_PIXEL
 		},
 		{
-		/*Filter*/				D3D12_FILTER_MIN_MAG_MIP_LINEAR
-		/*AddressU*/			,D3D12_TEXTURE_ADDRESS_MODE_WRAP
+			/*Filter*/				D3D12_FILTER_MIN_MAG_MIP_LINEAR
+			/*AddressU*/			,D3D12_TEXTURE_ADDRESS_MODE_WRAP
 		/*AddressV*/			,D3D12_TEXTURE_ADDRESS_MODE_WRAP
 		/*AddressW*/			,D3D12_TEXTURE_ADDRESS_MODE_WRAP
 		/*MipLODBias*/			,0
@@ -317,8 +447,8 @@ void CRender::InitRootSignatures()
 		/*ShaderVisibility*/	,D3D12_SHADER_VISIBILITY_PIXEL
 		},
 		{
-		/*Filter*/				D3D12_FILTER_MIN_MAG_MIP_LINEAR
-		/*AddressU*/			,D3D12_TEXTURE_ADDRESS_MODE_CLAMP
+			/*Filter*/				D3D12_FILTER_MIN_MAG_MIP_LINEAR
+			/*AddressU*/			,D3D12_TEXTURE_ADDRESS_MODE_CLAMP
 		/*AddressV*/			,D3D12_TEXTURE_ADDRESS_MODE_CLAMP
 		/*AddressW*/			,D3D12_TEXTURE_ADDRESS_MODE_CLAMP
 		/*MipLODBias*/			,0
@@ -345,6 +475,69 @@ void CRender::InitRootSignatures()
 	CheckResult(D3D12SerializeRootSignature(&descRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error), error);
 	CheckResult(m_device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_graphicsRS)));
 	signature->Release();
+}
+void CRender::InitLTCTextureRootSignature()
+{
+	D3D12_DESCRIPTOR_RANGE descriptorRange[] =
+	{
+		{ D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND },
+		{ D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND },
+	};
+
+	D3D12_ROOT_PARAMETER rootParameters[4];
+	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	rootParameters[0].Descriptor = {0, 0};
+	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+	rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	rootParameters[1].DescriptorTable = { 1, &descriptorRange[ 0 ] };
+	rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+	rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	rootParameters[2].DescriptorTable = { 1, &descriptorRange[ 1 ] };
+	rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+	rootParameters[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
+	rootParameters[3].Descriptor = {1, 0};
+	rootParameters[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+	D3D12_STATIC_SAMPLER_DESC const samplers[] =
+	{
+		{
+		/*Filter*/				D3D12_FILTER_MIN_MAG_MIP_LINEAR
+		/*AddressU*/			,D3D12_TEXTURE_ADDRESS_MODE_CLAMP
+		/*AddressV*/			,D3D12_TEXTURE_ADDRESS_MODE_CLAMP
+		/*AddressW*/			,D3D12_TEXTURE_ADDRESS_MODE_CLAMP
+		/*MipLODBias*/			,0
+		/*MaxAnisotropy*/		,0
+		/*ComparisonFunc*/		,D3D12_COMPARISON_FUNC_NEVER
+		/*BorderColor*/			,D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK
+		/*MinLOD*/				,0.f
+		/*MaxLOD*/				,D3D12_FLOAT32_MAX
+		/*ShaderRegister*/		,0
+		/*RegisterSpace*/		,0
+		/*ShaderVisibility*/	,D3D12_SHADER_VISIBILITY_ALL
+		}
+	};
+
+	D3D12_ROOT_SIGNATURE_DESC descRootSignature;
+	descRootSignature.NumParameters = ARRAYSIZE(rootParameters);
+	descRootSignature.pParameters = rootParameters;
+	descRootSignature.NumStaticSamplers = ARRAYSIZE(samplers);
+	descRootSignature.pStaticSamplers = samplers;
+	descRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_NONE;
+
+	ID3DBlob* signature;
+	ID3DBlob* error = nullptr;
+	CheckResult(D3D12SerializeRootSignature(&descRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error), error);
+	CheckResult(m_device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_ltcTextureRS)));
+	signature->Release();
+}
+
+void CRender::InitRootSignatures()
+{
+	InitGraphicsRootSignature();
+	InitLTCTextureRootSignature();
 }
 
 void CRender::InitShaders()
@@ -378,6 +571,9 @@ void CRender::InitShaders()
 	memset( objectSimpleTextureMacro, 0, sizeof( objectSimpleTextureMacro ) );
 	objectSimpleTextureMacro[0].Name = "TEXTURE";
 	m_shaders[ ST_OBJECT_DRAW_SIMPLE_TEXTURE ].InitShader( L"../shaders/objectDrawSimple.hlsl", SSimpleObjectVertexFormat::desc, SSimpleObjectVertexFormat::descNum, 1, objectSimpleDrawRenderTargets, &objectSimpleDrawRenderTargetsBlend, DXGI_FORMAT_D24_UNORM_S8_UINT, EDSS_DepthEnable, ERS_Default, objectSimpleTextureMacro );
+
+	m_shaders[ST_LTC_TEXTURE].InitComputeShader( L"../shaders/ltcTexture.hlsl", m_ltcTextureRS );
+
 
 	DXGI_FORMAT const lightRenderTargets[] = { DXGI_FORMAT_R8G8B8A8_UNORM };
 	ERenderTargetBlendStates const lightRenderTargetsBlend[] = { ERTBS_RGBAdd };
@@ -421,6 +617,12 @@ void CRender::InitShaders()
 
 void CRender::Init()
 {
+	m_texturesFreeIDs.Resize( MAX_TEXTURES - 1 );
+	for ( UINT i = 0; i < (MAX_TEXTURES - 1); ++i )
+	{
+		m_texturesFreeIDs[ i ] = MAX_TEXTURES - i - 1;
+	}
+
 	m_constBufferOffset = 0;
 
 	m_viewport.MaxDepth = 1.f;
@@ -452,6 +654,8 @@ void CRender::Init()
 
 	m_geometryResources.Add( SGeometry() );
 
+	memset( m_texturesResources, 0, sizeof( m_texturesResources ) );
+
 	InitDescriptorHeaps();
 	InitCommands();
 	InitFrameData();
@@ -460,9 +664,6 @@ void CRender::Init()
 	InitRenderTargets();
 	InitRootSignatures();
 	InitShaders();
-
-	GTextRenderManager.Init();
-	GEnvironmentParticleManager.Init( 128, 2, 10.f );
 }
 
 void CRender::DrawRenderData( ID3D12GraphicsCommandList* commandList, TArray< SCommonRenderData > const& renderData )
@@ -471,7 +672,7 @@ void CRender::DrawRenderData( ID3D12GraphicsCommandList* commandList, TArray< SC
 	Byte currentShader = ST_MAX;
 	Byte currentGeometry = UINT8_MAX;
 	Byte currentTexture[ SCommonRenderData::MAX_TEXTURES_NUM ];
-	memset( currentTexture, UINT8_MAX, sizeof( currentTexture ) );
+	memset( currentTexture, 0, sizeof( currentTexture ) );
 
 	D3D12_GPU_VIRTUAL_ADDRESS const constBufferStart = m_constBufferResource->GetGPUVirtualAddress();
 	SCommonRenderData const* pRenderData = renderData.begin();
@@ -486,9 +687,9 @@ void CRender::DrawRenderData( ID3D12GraphicsCommandList* commandList, TArray< SC
 			Byte const texture = m_texturesIDs[ pRenderData->m_texturesOffset + textureID ];
 			if ( currentTexture[ textureID ] != texture )
 			{
-				if ( texture != UINT8_MAX )
+				if ( texture )
 				{
-					commandList->SetGraphicsRootDescriptorTable( textureID + 3, m_texturesDH.GetGPUDescriptor( texture ) );
+					commandList->SetGraphicsRootDescriptorTable( textureID + 3, m_texturesDH.GetGPUDescriptorScaled( m_texturesDescriptorHeapOffset[ texture ] ) );
 					currentTexture[ textureID ] = texture;
 				}
 			}
@@ -547,12 +748,12 @@ void CRender::DrawRenderData( ID3D12GraphicsCommandList* commandList, TArray< SC
 
 void CRender::DrawLights( ID3D12GraphicsCommandList * commandList )
 {
-	commandList->SetGraphicsRootDescriptorTable( 3, m_texturesDH.GetGPUDescriptor( m_globalBufferDescriptorsOffsets[ GBB_DIFFUSE_METALNESS ].m_srvOffset ) );
-	commandList->SetGraphicsRootDescriptorTable( 4, m_texturesDH.GetGPUDescriptor( m_globalBufferDescriptorsOffsets[ GBB_NORMAL ].m_srvOffset ) );
-	commandList->SetGraphicsRootDescriptorTable( 5, m_texturesDH.GetGPUDescriptor( m_globalBufferDescriptorsOffsets[ GBB_EMISSIVE_ROUGHNESS ].m_srvOffset ) );
-	commandList->SetGraphicsRootDescriptorTable( 6, m_texturesDH.GetGPUDescriptor( m_globalBufferDescriptorsOffsets[ GBB_DEPTH ].m_srvOffset ) );
-	commandList->SetGraphicsRootDescriptorTable( 7, m_texturesDH.GetGPUDescriptor( T_LTC_AMP ) );
-	commandList->SetGraphicsRootDescriptorTable( 8, m_texturesDH.GetGPUDescriptor( T_LTC_MAT ) );
+	commandList->SetGraphicsRootDescriptorTable( 3, m_texturesDH.GetGPUDescriptorScaled( m_globalBufferDescriptorsOffsets[ GBB_DIFFUSE_METALNESS ].m_srvOffset ) );
+	commandList->SetGraphicsRootDescriptorTable( 4, m_texturesDH.GetGPUDescriptorScaled( m_globalBufferDescriptorsOffsets[ GBB_NORMAL ].m_srvOffset ) );
+	commandList->SetGraphicsRootDescriptorTable( 5, m_texturesDH.GetGPUDescriptorScaled( m_globalBufferDescriptorsOffsets[ GBB_EMISSIVE_ROUGHNESS ].m_srvOffset ) );
+	commandList->SetGraphicsRootDescriptorTable( 6, m_texturesDH.GetGPUDescriptorScaled( m_globalBufferDescriptorsOffsets[ GBB_DEPTH ].m_srvOffset ) );
+	commandList->SetGraphicsRootDescriptorTable( 7, m_texturesDH.GetGPUDescriptorScaled( m_commonTexturesDescriptorHeapOffset[ ECommonTexuters::LTC_AMP ] ) );
+	commandList->SetGraphicsRootDescriptorTable( 8, m_texturesDH.GetGPUDescriptorScaled( m_commonTexturesDescriptorHeapOffset[ ECommonTexuters::LTC_MAT ] ) );
 
 	D3D12_GPU_VIRTUAL_ADDRESS const constBufferStart = m_constBufferResource->GetGPUVirtualAddress();
 
@@ -565,7 +766,10 @@ void CRender::DrawLights( ID3D12GraphicsCommandList * commandList )
 		if ( light.m_texturesNum )
 		{
 			Byte const textureID = m_texturesIDs[ light.m_texturesOffset ];
-			commandList->SetGraphicsRootDescriptorTable( 9, m_texturesDH.GetGPUDescriptor( textureID ) );
+			if ( textureID )
+			{
+				commandList->SetGraphicsRootDescriptorTable( 9, m_texturesDH.GetGPUDescriptorScaled( m_texturesDescriptorHeapOffset[ textureID ] ) );
+			}
 		}
 
 		if ( lightShader != light.m_lightShader )
@@ -669,7 +873,7 @@ void CRender::DrawEnviroParticleRenderData( ID3D12GraphicsCommandList* commandLi
 void CRender::DrawDebug( ID3D12GraphicsCommandList* commandList )
 {
 #ifdef _DEBUG
-	commandList->SetGraphicsRootDescriptorTable( 3, m_texturesDH.GetGPUDescriptor( m_globalBufferDescriptorsOffsets[ GBB_RAIN_DEPTH ].m_srvOffset ) );
+	commandList->SetGraphicsRootDescriptorTable( 3, m_texturesDH.GetGPUDescriptorScaled( m_globalBufferDescriptorsOffsets[ GBB_RAIN_DEPTH ].m_srvOffset ) );
 	commandList->SetPipelineState( m_shaders[ EShaderType::ST_RECT_DRAW ].GetPSO() );
 	DrawRect( commandList, Vec4( -0.75f, -.75f, 0.5f, 0.5f ) );
 #endif
@@ -818,7 +1022,7 @@ void CRender::DrawFrame()
 
 	DrawLights( commandList );
 
-	commandList->SetGraphicsRootDescriptorTable( 7, m_texturesDH.GetGPUDescriptor( m_globalBufferDescriptorsOffsets[ GBB_RAIN_DEPTH ].m_srvOffset ) );
+	commandList->SetGraphicsRootDescriptorTable( 7, m_texturesDH.GetGPUDescriptorScaled( m_globalBufferDescriptorsOffsets[ GBB_RAIN_DEPTH ].m_srvOffset ) );
 
 	DrawRenderData( commandList, m_commonRenderData[RL_TRANSLUCENT] );
 	
@@ -884,6 +1088,8 @@ void CRender::Release()
 	m_graphicsCL->Release();
 
 	m_computeCQ->Release();
+	m_computeCA->Release();
+	m_computeCL->Release();
 
 	for (unsigned int shaderID = 0; shaderID < ST_MAX; ++shaderID)
 	{
@@ -901,6 +1107,7 @@ void CRender::Release()
 	}
 
 	m_graphicsRS->Release();
+	m_ltcTextureRS->Release();
 	m_renderTargetDH.Release();
 	m_texturesDH.Release();
 	for (UINT frameID = 0; frameID < FRAME_NUM; ++frameID)
@@ -930,10 +1137,10 @@ void CRender::Release()
 		m_geometryResources[geometryID].Release();
 	}
 
-	UINT const texutreNum = m_texturesResources.Size();
-	for (UINT texutreID = 0; texutreID < texutreNum; ++texutreID)
+	tTextureResManager::iterator tEnd =	GTextureResources.end();
+	for (tTextureResManager::iterator itr = GTextureResources.begin(); itr != tEnd; itr++)
 	{
-		m_texturesResources[texutreID]->Release();
+		m_texturesResources[ itr->second ]->Release();
 	}
 
 	m_swapChain->Release();
@@ -984,26 +1191,6 @@ void CRender::DrawRect( ID3D12GraphicsCommandList* commandList, Vec4 screenPosit
 	commandList->DrawInstanced( 4, 1, 0, 0 );
 }
 
-void CRender::ResizeDescriptorHeap( SDescriptorHeap& descriptorHeap, UINT const size )
-{
-	ASSERT( size > 0 );
-	ID3D12DescriptorHeap* oldHeap = descriptorHeap.m_pDescriptorHeap;
-
-	D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
-	heapDesc.NumDescriptors = size;
-	heapDesc.Type = descriptorHeap.m_type;
-	heapDesc.Flags = descriptorHeap.m_flags;
-	CheckResult(m_device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&descriptorHeap.m_pDescriptorHeap)));
-
-	if ( 0 < descriptorHeap.m_descriptorsNum )
-	{
-		m_device->CopyDescriptorsSimple( min( size, descriptorHeap.m_descriptorsNum ), descriptorHeap.m_pDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), oldHeap->GetCPUDescriptorHandleForHeapStart(), descriptorHeap.m_type );
-		oldHeap->Release();
-	}
-
-	descriptorHeap.m_descriptorsNum = size;
-}
-
 void CRender::CreateFullscreenTriangleRes()
 {
 	UINT const verticesNum = 3;
@@ -1051,43 +1238,50 @@ void CRender::CreateFullscreenTriangleRes()
 	m_resourceBarrier.Add( barrier );
 }
 
+void CRender::CreateCommonTextures()
+{
+	wchar_t const* textures[] =
+	{
+		L"../content/textures/common/ltc_amp.dds",
+		L"../content/textures/common/ltc_mat.dds",
+	};
+	CT_ASSERT( ARRAYSIZE( textures ) == COMMON_TEXTURE_MAX );
+
+	for (unsigned int texture = 0; texture < ARRAYSIZE(textures); ++texture)
+	{
+		DirectX::TexMetadata texMeta;
+		DirectX::ScratchImage image;
+		if ( DirectX::LoadFromWICFile( textures[ texture ], DirectX::WIC_FLAGS_NONE, &texMeta, image ) != S_OK )
+		{
+			CheckResult( DirectX::LoadFromDDSFile( textures[ texture ], DirectX::DDS_FLAGS_NONE, &texMeta, image ) );
+		}
+
+		STextureInfo textureInfo;
+		textureInfo.m_width = UINT(texMeta.width);
+		textureInfo.m_height = UINT(texMeta.height);
+		textureInfo.m_format = texMeta.format;
+		textureInfo.m_mipLevels = Byte(texMeta.mipLevels);
+
+		ASSERT( textureInfo.m_format != DXGI_FORMAT_UNKNOWN );
+		UINT16 const textureID = GRender.LoadResource( textureInfo, image.GetPixels() );
+		GTextureResources[ textures[ texture ] ] = textureID;
+		m_commonTexturesDescriptorHeapOffset[ texture ] = m_texturesDescriptorHeapOffset[ textureID ];
+	}
+}
+
 void CRender::BeginLoadResources(unsigned int const textureNum)
 {
-	ResizeDescriptorHeap( m_texturesDH, textureNum + GBB_MAX );
-
-	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.Texture2D.MipLevels = 1;
-	srvDesc.Texture2D.MostDetailedMip = 0;
-
-	m_globalBufferDescriptorsOffsets[ GBB_DIFFUSE_METALNESS ].m_srvOffset = textureNum + GBB_DIFFUSE_METALNESS;
-	srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	m_device->CreateShaderResourceView(m_globalBufferBuffers[ GBB_DIFFUSE_METALNESS ], &srvDesc, m_texturesDH.GetCPUDescriptor(m_globalBufferDescriptorsOffsets[ GBB_DIFFUSE_METALNESS ].m_srvOffset) );
-
-	m_globalBufferDescriptorsOffsets[ GBB_NORMAL ].m_srvOffset = textureNum + GBB_NORMAL;
-	srvDesc.Format = DXGI_FORMAT_R10G10B10A2_UNORM;
-	m_device->CreateShaderResourceView(m_globalBufferBuffers[ GBB_NORMAL ], &srvDesc, m_texturesDH.GetCPUDescriptor(m_globalBufferDescriptorsOffsets[ GBB_NORMAL ].m_srvOffset) );
-
-	m_globalBufferDescriptorsOffsets[ GBB_EMISSIVE_ROUGHNESS ].m_srvOffset = textureNum + GBB_EMISSIVE_ROUGHNESS;
-	srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	m_device->CreateShaderResourceView(m_globalBufferBuffers[ GBB_EMISSIVE_ROUGHNESS ], &srvDesc, m_texturesDH.GetCPUDescriptor(m_globalBufferDescriptorsOffsets[ GBB_EMISSIVE_ROUGHNESS ].m_srvOffset) );
-
-	m_globalBufferDescriptorsOffsets[ GBB_DEPTH ].m_srvOffset = textureNum + GBB_DEPTH;
-	srvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
-	m_device->CreateShaderResourceView(m_globalBufferBuffers[ GBB_DEPTH ], &srvDesc, m_texturesDH.GetCPUDescriptor(m_globalBufferDescriptorsOffsets[ GBB_DEPTH ].m_srvOffset) );
-
-	m_globalBufferDescriptorsOffsets[ GBB_RAIN_DEPTH ].m_srvOffset = textureNum + GBB_RAIN_DEPTH;
-	srvDesc.Format = DXGI_FORMAT_R32_FLOAT;
-	m_device->CreateShaderResourceView(m_globalBufferBuffers[ GBB_RAIN_DEPTH ], &srvDesc, m_texturesDH.GetCPUDescriptor(m_globalBufferDescriptorsOffsets[ GBB_RAIN_DEPTH ].m_srvOffset) );
-
 	m_copyCA->Reset();
 	m_copyCL->Reset(m_copyCA, nullptr);
 	CreateFullscreenTriangleRes();
+	CreateCommonTextures();
 }
 
-void CRender::LoadResource(STexture const& texture)
+UINT16 CRender::LoadResource( STextureInfo const& texture, Byte const* const data )
 {
+	UINT16 const textureFreeID = m_texturesFreeIDs.PopBack();
+	m_texturesInfo[ textureFreeID ] = texture;
+
 	D3D12_RESOURCE_DESC descTexture = {};
 	descTexture.DepthOrArraySize = 1;
 	descTexture.SampleDesc.Count = 1;
@@ -1101,7 +1295,7 @@ void CRender::LoadResource(STexture const& texture)
 
 	ID3D12Resource* textureRes;
 	CheckResult(m_device->CreateCommittedResource(&GHeapPropertiesGPUOnly, D3D12_HEAP_FLAG_NONE, &descTexture, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&textureRes)));
-	m_texturesResources.Add(textureRes);
+	m_texturesResources[ textureFreeID ] = textureRes;
 
 	UINT64 bufferSize;
 	D3D12_PLACED_SUBRESOURCE_FOOTPRINT* pFootprints = new D3D12_PLACED_SUBRESOURCE_FOOTPRINT[ texture.m_mipLevels ];
@@ -1123,7 +1317,7 @@ void CRender::LoadResource(STexture const& texture)
 	void* pGPU;
 	textureUploadRes->Map(0, nullptr, &pGPU);
 
-	Byte const* srcRow = texture.m_data;
+	Byte const* srcRow = data;
 	for ( UINT mipLevel = 0; mipLevel < texture.m_mipLevels; ++mipLevel )
 	{
 		for ( UINT rowID = 0; rowID < pNumRows[ mipLevel ]; ++rowID )
@@ -1166,7 +1360,10 @@ void CRender::LoadResource(STexture const& texture)
 	srvDesc.Texture2D.MostDetailedMip = 0;
 	srvDesc.Format = texture.m_format;
 
-	m_device->CreateShaderResourceView(textureRes, &srvDesc, m_texturesDH.GetCPUDescriptor(m_texturesResources.Size() - 1));
+	m_texturesDescriptorHeapOffset[ textureFreeID ] = m_texturesDHFree.PopBack();
+	m_device->CreateShaderResourceView( textureRes, &srvDesc, m_texturesDH.GetCPUDescriptorScaled( m_texturesDescriptorHeapOffset[ textureFreeID ] ) );
+
+	return textureFreeID;
 }
 
 Byte CRender::LoadResource( SGeometryData const & geometryData )
@@ -1250,6 +1447,9 @@ void CRender::EndLoadResources()
 {
 	m_copyCL->Close();
 	m_copyCQ->ExecuteCommandLists(1, (ID3D12CommandList**)(&m_copyCL));
+
+	GTextRenderManager.Init();
+	GEnvironmentParticleManager.Init( 128, 2, 10.f );
 }
 
 void CRender::ExecuteComputeQueue( UINT const commandListNum, ID3D12CommandList* const* pCommandLists )
@@ -1321,22 +1521,22 @@ void CRender::WaitForCopyQueue()
 {
 	CheckResult(m_copyCQ->Signal(m_fence, m_fenceValue));
 	CheckResult(m_fence->SetEventOnCompletion(m_fenceValue, m_fenceEvent));
-	++m_fenceValue;
 	WaitForSingleObject(m_fenceEvent, INFINITE);
+	++m_fenceValue;
 }
 void CRender::WaitForGraphicsQueue()
 {
 	CheckResult(m_graphicsCQ->Signal(m_fence, m_fenceValue));
 	CheckResult(m_fence->SetEventOnCompletion(m_fenceValue, m_fenceEvent));
-	++m_fenceValue;
 	WaitForSingleObject(m_fenceEvent, INFINITE);
+	++m_fenceValue;
 }
 void CRender::WaitForComputeQueue()
 {
 	CheckResult(m_computeCQ->Signal(m_fence, m_fenceValue));
 	CheckResult(m_fence->SetEventOnCompletion(m_fenceValue, m_fenceEvent));
-	++m_fenceValue;
 	WaitForSingleObject(m_fenceEvent, INFINITE);
+	++m_fenceValue;
 }
 
 void CRender::ReinitShaders()

@@ -24,6 +24,7 @@ private:
 	float m_boxesSize;
 	float m_size;
 	float m_positionOffset;
+	UINT16 m_texture;
 
 private:
 	void AllocateBuffers();

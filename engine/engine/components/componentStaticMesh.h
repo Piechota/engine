@@ -18,7 +18,7 @@ struct SComponentStaticMesh
 		m_shaderID = 0;
 		m_layer = 0;
 
-		memset( m_textureID, UINT8_MAX, sizeof( m_textureID ) );
+		memset( m_textureID, 0, sizeof( m_textureID ) );
 	}
 };
 POD_TYPE( SComponentStaticMesh )
