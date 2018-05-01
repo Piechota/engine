@@ -7,8 +7,10 @@
 extern SViewObject GViewObject;
 CRender GRender;
 
-/*void CRender::Test( Byte const textureID, wchar_t* const fileName, STexture texture )
+void CRender::CreateLTCTexture( UINT16 const textureID, Byte* outData )
 {
+	ASSERT( outData != nullptr );
+
 	struct SConstBuffer
 	{
 		float m_invDstTextureSize;
@@ -17,16 +19,19 @@ CRender GRender;
 		int m_maxKernelRadius;
 	} cbuffer;
 
+	STextureInfo const& textureInfo = m_texturesInfo[ textureID ];
+	UINT const mipMaps = textureInfo.m_mipLevels;
+
 	D3D12_RESOURCE_DESC descTexture = {};
 	descTexture.DepthOrArraySize = 1;
 	descTexture.SampleDesc.Count = 1;
 	descTexture.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 	descTexture.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 	descTexture.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-	descTexture.MipLevels = texture.m_mipLevels;
-	descTexture.Width = texture.m_width;
-	descTexture.Height = texture.m_height;
-	descTexture.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	descTexture.MipLevels = mipMaps;
+	descTexture.Width = textureInfo.m_width;
+	descTexture.Height = textureInfo.m_height;
+	descTexture.Format = textureInfo.m_format;
 
 	ID3D12Resource* textureRes;
 	CheckResult(m_device->CreateCommittedResource(&GHeapPropertiesReadback, D3D12_HEAP_FLAG_NONE, &descTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, nullptr, IID_PPV_ARGS(&textureRes)));
@@ -41,7 +46,7 @@ CRender GRender;
 	descResource.SampleDesc.Count = 1;
 	descResource.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 	descResource.Flags = D3D12_RESOURCE_FLAG_NONE;
-	descResource.Width = (texture.m_width + 1) * (texture.m_width + 1) * 4;
+	descResource.Width = (textureInfo.m_width + 1) * (textureInfo.m_width + 1) * 4;
 
 	ID3D12Resource* kernelRes;
 	CheckResult(m_device->CreateCommittedResource(&GHeapPropertiesUpload, D3D12_HEAP_FLAG_NONE, &descResource, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&kernelRes)));
@@ -49,36 +54,34 @@ CRender GRender;
 	float* kernel = nullptr;
 	CheckResult(kernelRes->Map(0, nullptr, (void**)(&kernel)));
 
-	Math::GaussianKelner2D( kernel, 500.f, texture.m_width / 2 );
+	Math::GaussianKelner2D( kernel, 500.f, textureInfo.m_width / 2 );
 	kernelRes->Unmap( 0, nullptr );
 
-	UINT const mipMap0 = m_texturesDH.m_descriptorsNum;
+	UINT* descriptorsOffsets = new UINT[ mipMaps ];
 
-	for ( UINT i = 0; i < texture.m_mipLevels; ++i )
+	for ( UINT i = 0; i < mipMaps; ++i )
 	{
 		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 		srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 		srvDesc.Texture2D.MipLevels = -1;
 		srvDesc.Texture2D.MostDetailedMip = i;
-		srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		srvDesc.Format = textureInfo.m_format;
 
-		m_device->CreateShaderResourceView(textureRes, &srvDesc, m_texturesDH.GetCPUDescriptor(mipMap0 + i));
+		descriptorsOffsets[ i ] = m_texturesDHFree.PopBack();
+		m_device->CreateShaderResourceView( textureRes, &srvDesc, m_texturesDH.GetCPUDescriptorScaled( descriptorsOffsets[ i ] ) );
 	}
-
-	DirectX::ScratchImage dstImage;
-	dstImage.Initialize2D( DXGI_FORMAT_R8G8B8A8_UNORM, texture.m_width, texture.m_width, 1, texture.m_mipLevels );
 
 	m_computeCA->Reset();
 	m_computeCL->Reset( m_computeCA, m_shaders[ST_LTC_TEXTURE].GetPSO() );
 	m_computeCL->SetDescriptorHeaps(1, &m_texturesDH.m_pDescriptorHeap);
 	m_computeCL->SetComputeRootSignature( m_ltcTextureRS );
-	m_computeCL->SetComputeRootDescriptorTable( 1, m_texturesDH.GetGPUDescriptor( textureID ) );
+	m_computeCL->SetComputeRootDescriptorTable( 1, m_texturesDH.GetGPUDescriptorScaled( m_texturesDescriptorHeapOffset[ textureID ] ) );
 	m_computeCL->SetComputeRootShaderResourceView( 3, kernelRes->GetGPUVirtualAddress() );
 
-	for ( UINT i = 0; i < texture.m_mipLevels; ++i )
+	for ( UINT i = 0; i < mipMaps; ++i )
 	{
-		UINT const mipmapSize = texture.m_width >> i;
+		UINT const mipmapSize = textureInfo.m_width >> i;
 		UINT const groupNum = ( ( mipmapSize + 15 ) & ~15 ) / 16;
 
 		cbuffer.m_dstTextureSize = float( mipmapSize );
@@ -89,7 +92,7 @@ CRender GRender;
 		D3D12_GPU_VIRTUAL_ADDRESS constBufferAddress;
 		GRender.SetConstBuffer( constBufferAddress, ( Byte* )&cbuffer, sizeof( cbuffer ) );
 		m_computeCL->SetComputeRootConstantBufferView( 0, constBufferAddress );
-		m_computeCL->SetComputeRootDescriptorTable( 2, m_texturesDH.GetGPUDescriptor( mipMap0 + i ) );
+		m_computeCL->SetComputeRootDescriptorTable( 2, m_texturesDH.GetGPUDescriptorScaled( descriptorsOffsets[ i ] ) );
 
 		m_computeCL->Dispatch( groupNum, groupNum, 1 );
 	}
@@ -99,18 +102,23 @@ CRender GRender;
 	m_computeCQ->ExecuteCommandLists( 1, (ID3D12CommandList* const*)&m_computeCL );
 	WaitForComputeQueue();
 
-	for ( UINT i = 0; i < texture.m_mipLevels; ++i )
+	Byte* mipMapData = outData;
+	for ( UINT i = 0; i < mipMaps; ++i )
 	{
-		UINT const mipmapSize = texture.m_width >> i;
-		CheckResult( textureRes->ReadFromSubresource( dstImage.GetImage( i, 0, 0 )->pixels, mipmapSize * 4, mipmapSize * mipmapSize * 4, i, nullptr ) );
+		UINT const mipmapSize = textureInfo.m_width >> i;
+		CheckResult( textureRes->ReadFromSubresource( mipMapData, mipmapSize * 4, mipmapSize * mipmapSize * 4, i, nullptr ) );
+		mipMapData += mipmapSize * mipmapSize * 4;
 	}
 
-	DirectX::SaveToDDSFile( dstImage.GetImages(), dstImage.GetImageCount(), dstImage.GetMetadata(), 0, fileName );
+	for ( UINT i = 0; i < mipMaps; ++i )
+	{
+		m_texturesDHFree.Add( descriptorsOffsets[ mipMaps - i - 1 ] );
+	}
 
 	kernelRes->Release();
 	textureRes->Release();
 }
-*/
+
 void CRender::InitCommands()
 {
 	D3D12_COMMAND_QUEUE_DESC descCQ = {};

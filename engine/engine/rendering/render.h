@@ -188,7 +188,7 @@ public:
 	ID3D12RootSignature* GetMainRS() { return m_graphicsRS; }
 	ID3D12Device* GetDevice() { return m_device; }
 
-	//void Test( Byte const textureID, wchar_t* const fileName, STexture texture  );
+	void CreateLTCTexture( UINT16 const textureID, Byte* outData  );
 
 	Byte AddGeometry( SGeometry const& geometry );
 	SGeometry& GetGeometry( Byte const geometryID );
@@ -234,6 +234,11 @@ public: //Getters/setters
 
 	void SetHWND(HWND& hwnd) { m_hwnd = hwnd; }
 	HWND SetHWND() const { return m_hwnd; }
+
+	STextureInfo GetTextureInfo( UINT const textureID ) const
+	{
+		return m_texturesInfo[ textureID ];
+	}
 
 	D3D12_GPU_VIRTUAL_ADDRESS GetGlobalConstBufferAddress() const { return m_globalConstBufferAddress; }
 };

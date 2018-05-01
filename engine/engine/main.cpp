@@ -34,206 +34,6 @@ INT64 GFramesProf[ GFrameProfNum ];
 long GFrameProfID = 0;
 #endif
 
-
-void TestTextureMipMap2D( Byte* const dstBegin, int const dstWidth, int const dstHeight, Byte* const srcBegin, int const srcWidth, int const srcHeight, int const inTexKernelRadius )
-{
-	int const margSize = dstWidth / 4;
-
-	int const texCoordX0 = margSize;
-	int const texCoordY0 = margSize;
-	int const texCoordX1 = dstWidth - margSize;
-	int const texCoordY1 = dstHeight - margSize;
-
-	int const maxKernelDim = max( 4 * margSize + 1, 2 * inTexKernelRadius + 1 );
-	int const maxKernelRadius = ( maxKernelDim - 1 ) / 2;
-
-	float* kernel = new float[ maxKernelDim * maxKernelDim ];
-	Math::GaussianKelner2D( kernel, 500.f, int( maxKernelRadius ) );
-
-	for ( int y = 0; y < dstHeight; ++y )
-	{
-		int const distanceY = max( 0, max( texCoordY0 - y, y - texCoordY1 + 1 ) );
-		for ( int x = 0; x < dstWidth; ++x )
-		{
-			int const distanceX = max( 0, max( texCoordX0 - x, x - texCoordX1 + 1 ) );
-			int const distance = max( distanceX, distanceY );
-
-			int const kernelRadius = max( inTexKernelRadius, int(float(distance * 2.f)) );
-			int const kernelDim = 2 * kernelRadius + 1;
-			int const kernelSize = kernelDim * kernelDim;
-
-			int const kernelOffset = maxKernelRadius - kernelRadius;
-
-			int const sampleX0 = ( x < kernelRadius ? 0 : ( x - kernelRadius ) );
-			int const sampleY0 = ( y < kernelRadius ? 0 : ( y - kernelRadius ) );
-
-			int const sampleX1 = ( min( dstWidth, x + kernelRadius + 1 ) );
-			int const sampleY1 = ( min( dstHeight, y + kernelRadius + 1 ) );
-
-			int const kernelX0 = kernelRadius + sampleX0 - x;
-			int const kernelY0 = kernelRadius + sampleY0 - y;
-
-			int const kernelX1 = kernelRadius + sampleX1 - x;
-			int const kernelY1 = kernelRadius + sampleY1 - y;
-
-			float sum = 0.f;
-
-			float accR = 0.f;
-			float accG = 0.f;
-			float accB = 0.f;
-
-			for ( int currentY = sampleY0; currentY < sampleY1; ++currentY )
-			{
-				int const srcSampleY = max( 0, min( srcWidth - 1, currentY - texCoordY0 ) );
-				for ( int currentX = sampleX0; currentX < sampleX1; ++currentX )
-				{
-					int const srcSampleX = max( 0, min( srcWidth - 1, currentX - texCoordX0 ) );
-
-					float const srcR = float( srcBegin[ ( srcSampleY * srcWidth + srcSampleX ) * 4 + 0 ] );
-					float const srcG = float( srcBegin[ ( srcSampleY * srcWidth + srcSampleX ) * 4 + 1 ] );
-					float const srcB = float( srcBegin[ ( srcSampleY * srcWidth + srcSampleX ) * 4 + 2 ] );
-					float const kernelVal = kernel[ ( kernelOffset + kernelY0 + currentY - sampleY0 ) * maxKernelDim + kernelOffset + kernelX0 + currentX - sampleX0 ];
-					accR += srcR * kernelVal;
-					accG += srcG * kernelVal;
-					accB += srcB * kernelVal;
-
-					sum += kernelVal;
-				}
-			}
-
-			dstBegin[ ( y * dstWidth + x ) * 4 + 0 ] = Byte( min( 255.f, accR / sum ) );
-			dstBegin[ ( y * dstWidth + x ) * 4 + 1 ] = Byte( min( 255.f, accG / sum ) );
-			dstBegin[ ( y * dstWidth + x ) * 4 + 2 ] = Byte( min( 255.f, accB / sum ) );
-			dstBegin[ ( y * dstWidth + x ) * 4 + 3 ] = 0xFF;
-		}
-	}
-
-	delete[] kernel;
-}
-
-void TestTextureMipMap1D( Byte* const dstBegin, int const dstWidth, int const dstHeight, Byte* const srcBegin, int const srcWidth, int const srcHeight, int const inTexKernelRadius )
-{
-	int const margSize = dstWidth / 4;
-
-	int const texCoordX0 = margSize;
-	int const texCoordY0 = margSize;
-	int const texCoordX1 = dstWidth - margSize;
-	int const texCoordY1 = dstHeight - margSize;
-
-	int const maxKernelDim = max( 4 * margSize + 1, 2 * inTexKernelRadius + 1 );
-	int const maxKernelRadius = ( maxKernelDim - 1 ) / 2;
-
-	float* kernel = new float[ maxKernelDim ];
-	Math::GaussianKelner1D( kernel, 500.f, int( maxKernelRadius ) );
-
-	Byte* const blurHorizontal = new Byte[ dstWidth * 3 * dstHeight ];
-
-	for ( int y = 0; y < dstHeight; ++y )
-	{
-		int const distanceY = max( 0, max( texCoordY0 - y, y - texCoordY1 + 1 ) );
-		for ( int x = 0; x < dstWidth; ++x )
-		{
-			int const distanceX = max( 0, max( texCoordX0 - x, x - texCoordX1 + 1 ) );
-			int const distance = max( distanceX, distanceY );
-
-			int const kernelRadius = max( inTexKernelRadius, int(float(distance * 2.f)) );
-			int const kernelDim = 2 * kernelRadius + 1;
-
-			int const kernelOffset = maxKernelRadius - kernelRadius;
-
-			int const sampleX0 = ( x < kernelRadius ? 0 : ( x - kernelRadius ) );
-			int const sampleY0 = y;// min( texCoordY1 - 1, max( texCoordY0, y ) );
-
-			int const sampleX1 = ( min( dstWidth, x + kernelRadius + 1 ) );
-
-			int const kernelX0 = kernelRadius + sampleX0 - x;
-
-			//UINT const srcSampleX0 = sampleX0 - margSize;
-			//UINT const srcSampleY0 = sampleY0 - margSize;
-			//
-			//UINT const srcSampleX1 = sampleX1 - margSize;
-
-			float sum = 0.f;
-
-			float accR = 0.f;
-			float accG = 0.f;
-			float accB = 0.f;
-
-			for ( int currentX = sampleX0; currentX < sampleX1; ++currentX )
-			{
-				int const srcSampleX = min( srcWidth - 1, max( 0, currentX - texCoordX0 ) );
-				int const srcSampleY = min( srcHeight - 1, max( 0, sampleY0 - texCoordY0 ) );
-
-				float const srcR = float( srcBegin[ ( srcSampleY * srcWidth + srcSampleX ) * 4 + 0 ] );
-				float const srcG = float( srcBegin[ ( srcSampleY * srcWidth + srcSampleX ) * 4 + 1 ] );
-				float const srcB = float( srcBegin[ ( srcSampleY * srcWidth + srcSampleX ) * 4 + 2 ] );
-				float const kernelVal = kernel[ kernelOffset + kernelX0 + currentX - sampleX0 ];
-				accR += srcR * kernelVal;
-				accG += srcG * kernelVal;
-				accB += srcB * kernelVal;
-
-				sum += kernelVal;
-			}
-
-			blurHorizontal[ ( x * dstHeight + y ) * 3 + 0 ] = Byte( min( 255.f, accR / sum ) );
-			blurHorizontal[ ( x * dstHeight + y ) * 3 + 1 ] = Byte( min( 255.f, accG / sum ) );
-			blurHorizontal[ ( x * dstHeight + y ) * 3 + 2 ] = Byte( min( 255.f, accB / sum ) );
-		}
-	}
-
-	for ( int y = 0; y < dstHeight; ++y )
-	{
-		int const distanceY = max( 0, max( texCoordY0 - y, y - texCoordY1 + 1 ) );
-		for ( int x = 0; x < dstWidth; ++x )
-		{
-			int const distanceX = max( 0, max( texCoordX0 - x, x - texCoordX1 + 1 ) );
-			int const distance = max( distanceX, distanceY );
-
-			int const kernelRadius = max( inTexKernelRadius, int(float(distance * 2.f)) );
-			int const kernelDim = 2 * kernelRadius + 1;
-
-			int const kernelOffset = maxKernelRadius - kernelRadius;
-
-			int const sampleX0 = (  x < kernelRadius ? 0 : ( x - kernelRadius ) );
-			int const sampleY0 = y;
-
-			int const sampleX1 = ( min( dstWidth, x + kernelRadius + 1 ) );
-
-			int const kernelX0 = kernelRadius + sampleX0 - x;
-			int const kernelX1 = kernelRadius + sampleX1 - x;
-
-			float sum = 0.f;
-
-			float accR = 0.f;
-			float accG = 0.f;
-			float accB = 0.f;
-
-			for ( int currentX = sampleX0; currentX < sampleX1; ++currentX )
-			{
-				float const srcR = float( blurHorizontal[ ( sampleY0 * dstWidth + currentX ) * 3 + 0 ] );
-				float const srcG = float( blurHorizontal[ ( sampleY0 * dstWidth + currentX ) * 3 + 1 ] );
-				float const srcB = float( blurHorizontal[ ( sampleY0 * dstWidth + currentX ) * 3 + 2 ] );
-				float const kernelVal = kernel[ kernelOffset + kernelX0 + currentX - sampleX0 ];
-				accR += srcR * kernelVal;
-				accG += srcG * kernelVal;
-				accB += srcB * kernelVal;
-
-				sum += kernelVal;
-			}
-
-			dstBegin[ ( x * dstHeight + y ) * 4 + 0 ] = Byte( min( 255.f, accR / sum ) );
-			dstBegin[ ( x * dstHeight + y ) * 4 + 1 ] = Byte( min( 255.f, accG / sum ) );
-			dstBegin[ ( x * dstHeight + y ) * 4 + 2 ] = Byte( min( 255.f, accB / sum ) );
-
-			dstBegin[ ( x * dstHeight + y ) * 4 + 3 ] = 0xFF;
-		}
-	}
-
-	delete[] kernel;
-	delete[] blurHorizontal;
-}
-
-
 void InitGame()
 {
 	GEntityManager.Clear();
@@ -347,7 +147,7 @@ void InitGame()
 			staticMeshComponent.m_tiling.Set( 1.f, 1.f );
 			staticMeshComponent.m_geometryInfoID = G_PLANE;
 			staticMeshComponent.m_layer = RL_UNLIT;
-			staticMeshComponent.m_shaderID = Byte(ST_OBJECT_DRAW_SIMPLE);
+			staticMeshComponent.m_shaderID = Byte(ST_OBJECT_DRAW_SIMPLE_TEXTURE);
 			memset( staticMeshComponent.m_textureID, 0, sizeof( staticMeshComponent.m_textureID ) );
 			staticMeshComponent.m_textureID[ 0 ] = GTextureResources[ L"../content/textures/stained_glass.dds" ];
 		}
@@ -356,7 +156,7 @@ void InitGame()
 		{
 			SComponentLight& lightComponent = GComponentLightManager.GetComponent( lightHandle );
 			lightComponent.m_color.Set( 2.f, 2.f, 2.f );
-			lightComponent.m_textureID = GTextureResources[ L"../content/textures/stained_glass_test.dds" ];
+			lightComponent.m_textureID = GTextureResources[ L"../content/textures/stained_glass.ltc.dds" ];
 			lightComponent.m_lightShader = Byte( ELightFlags::LF_LTC_TEXTURE );
 		}
 
@@ -447,30 +247,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
 		//L"../content/textures/lena.dds",
 		//L"../content/textures/lena_test.dds",
 		L"../content/textures/stained_glass.dds",
-		L"../content/textures/stained_glass_test.dds",
+		L"../content/textures/stained_glass.ltc.dds",
 	};
-
-#if defined( CREATE_LTC_TEX )
-	{
-		DirectX::TexMetadata texMeta;
-		DirectX::ScratchImage image;
-		//CheckResult( DirectX::LoadFromDDSFile( L"../content/textures/lena.dds", DirectX::DDS_FLAGS_NONE, &texMeta, image ) );
-		CheckResult( DirectX::LoadFromDDSFile( L"../content/textures/stained_glass.dds", DirectX::DDS_FLAGS_NONE, &texMeta, image ) );
-
-		UINT const mipLevels = texMeta.mipLevels;
-		DirectX::ScratchImage dstImage;
-		dstImage.Initialize2D( texMeta.format, texMeta.width << 1, texMeta.height << 1, 1, mipLevels );
-
-		for ( UINT i = 0; i < mipLevels; ++i )
-		{
-			UINT const size = image.GetImage( i, 0, 0 )->width;
-			TestTextureMipMap2D( dstImage.GetImage( i, 0, 0 )->pixels, size << 1, size << 1, image.GetImage( i, 0, 0 )->pixels, size, size, i );
-		}
-
-		//DirectX::SaveToDDSFile( dstImage.GetImages(), dstImage.GetImageCount(), dstImage.GetMetadata(), 0, L"../content/textures/lena_test.dds" );
-		DirectX::SaveToDDSFile( dstImage.GetImages(), dstImage.GetImageCount(), dstImage.GetMetadata(), 0, L"../content/textures/stained_glass_test.dds" );
-	}
-#endif
 
 	GRender.Init();
 
@@ -533,11 +311,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
 
 	GRender.WaitForResourcesLoad();
 
-	//STexture testTexture;
-	//testTexture.m_width = 512;
-	//testTexture.m_height = 512;
-	//testTexture.m_mipLevels = 10;
-	//GRender.Test( T_LENA, L"../content/textures/stained_glass_test_2.dds", testTexture );
+#if defined( CREATE_LTC_TEX )
+	{
+		UINT16 const textureID = GTextureResources[ L"../content/textures/stained_glass.dds" ];
+		STextureInfo const textureInfo = GRender.GetTextureInfo( textureID );
+
+		DirectX::ScratchImage ltcTex;
+		ltcTex.Initialize2D( textureInfo.m_format, textureInfo.m_width, textureInfo.m_height, 1, textureInfo.m_mipLevels );
+
+		GRender.CreateLTCTexture( textureID, ltcTex.GetPixels() );
+
+		DirectX::SaveToDDSFile( ltcTex.GetImages(), ltcTex.GetImageCount(), ltcTex.GetMetadata(), 0, L"../content/textures/stained_glass.ltc.dds" );
+	}
+#endif
 
 	MSG msg = { 0 };
 	bool run = true;
