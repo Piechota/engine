@@ -7,15 +7,6 @@ private:
 
 public:
 	void Destroy();
-	SComponentHandle AddComponentTransform();
-	SComponentHandle GetComponentTransform() const;
-
-	SComponentHandle AddComponentStaticMesh();
-	SComponentHandle GetComponentStaticMesh() const;
-
-	SComponentHandle AddComponentLight();
-	SComponentHandle GetComponentLight() const;
-
-	SComponentHandle AddComponentCamera();
-	SComponentHandle GetComponentCamera() const;
+	SComponentHandle AddComponent( EComponentType const type );
+	SComponentHandle GetComponent( EComponentType const type ) const;
 };

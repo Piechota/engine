@@ -119,7 +119,7 @@ private:
 	CShaderRes						m_shaderLight[LF_MAX];
 
 	SDescriptorHeap								m_texturesDH;
-	TArray< UINT16 >		m_texturesDHFree;
+	TStaticArray< UINT16, MAX_TEXTURES >		m_texturesDHFree;
 
 	ID3D12Resource*					m_fullscreenTriangleRes;
 	D3D12_VERTEX_BUFFER_VIEW		m_fullscreenTriangleView;
@@ -131,9 +131,8 @@ private:
 	UINT16											m_texturesDescriptorHeapOffset[ MAX_TEXTURES ];
 	STextureInfo									m_texturesInfo[ MAX_TEXTURES ];
 	ID3D12Resource*									m_texturesResources[ MAX_TEXTURES ];
-	TArray< UINT16 >		m_texturesFreeIDs;
+	TStaticArray< UINT16, MAX_TEXTURES - 1 >		m_texturesFreeIDs;
 	UINT16											m_commonTexturesDescriptorHeapOffset[ COMMON_TEXTURE_MAX ];
-
 
 	TArray< ID3D12Resource* >				m_uploadResources;
 	TArray< D3D12_RESOURCE_BARRIER >		m_resourceBarrier;

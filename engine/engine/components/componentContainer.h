@@ -21,10 +21,7 @@ public:
 		{
 			handle.m_index = m_freeComponents[ m_freeComponents.Size() - 1 ];
 			m_freeComponents.EraseBack();
-			if ( !IsPOD< T >::value )
-			{
-				new ( &m_components[ handle.m_index ] ) T();
-			}
+			IsPOD< T >::Create( &m_components[ handle.m_index ] );
 		}
 
 		return handle;

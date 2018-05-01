@@ -35,9 +35,11 @@ private:
 	TArray< SRenderComponents > m_renderComponents;
 
 public:
-	void RegisterRenderComponents( UINT32 const transformID, UINT32 const staticMeshID )
+	void RegisterRenderComponents( SComponentHandle const transformHandle, SComponentHandle const staticMeshHandle )
 	{
-		m_renderComponents.Add( { transformID, staticMeshID } );
+		ASSERT( transformHandle.m_type == EComponentType::CT_Transform );
+		ASSERT( staticMeshHandle.m_type == EComponentType::CT_StaticMesh );
+		m_renderComponents.Add( { transformHandle.m_index, staticMeshHandle.m_index } );
 	}
 
 	void FillRenderData() const;

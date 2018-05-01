@@ -27,9 +27,12 @@ private:
 	Vec3	m_ambientLightColor;
 
 public:
-	void RegisterRenderComponents( UINT32 const transformID, UINT32 const lightID )
+	void RegisterRenderComponents( SComponentHandle const transformHandle, SComponentHandle const lighHandle )
 	{
-		m_renderComponents.Add( { transformID, lightID } );
+		ASSERT( transformHandle.m_type == EComponentType::CT_Transform );
+		ASSERT( lighHandle.m_type == EComponentType::CT_Light );
+
+		m_renderComponents.Add( { transformHandle.m_index, lighHandle.m_index } );
 	}
 
 	void SetDirectLightDir( Vec3 const dir ) { m_directLightDir = dir; }

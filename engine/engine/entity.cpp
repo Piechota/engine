@@ -27,86 +27,31 @@ void CEntity::Destroy()
 	}
 }
 
-SComponentHandle CEntity::AddComponentTransform()
+SComponentHandle CEntity::AddComponent( EComponentType const type )
 {
-	SComponentHandle const handle = GComponentTransformManager.AddComponent();
-	m_components.Add( handle );
-	return handle;
-}
-
-SComponentHandle CEntity::GetComponentTransform() const
-{
-	UINT const componentsNum = m_components.Size();
-	for ( UINT i = 0; i < componentsNum; ++i )
+	switch ( type )
 	{
-		SComponentHandle const handle = m_components[ i ];
-		if ( handle.m_type == EComponentType::CT_Transform )
-		{
-			return handle;
-		}
+		case EComponentType::CT_Transform:
+			return GComponentTransformManager.AddComponent();
+		case EComponentType::CT_StaticMesh:
+			return GComponentStaticMeshManager.AddComponent();
+		case EComponentType::CT_Light:
+			return GComponentLightManager.AddComponent();
+		case EComponentType::CT_Camera:
+			return GComponentCameraManager.AddComponent();
+		default:
+			ASSERT_STR( false, "Missing component type" );
+			return SComponentHandle{ 0, 0 };
 	}
-
-	return { 0, EComponentType::CT_INVALID };
 }
 
-SComponentHandle CEntity::AddComponentStaticMesh()
-{
-	SComponentHandle const handle = GComponentStaticMeshManager.AddComponent();
-	m_components.Add( handle );
-	return handle;
-}
-
-SComponentHandle CEntity::GetComponentStaticMesh() const
+SComponentHandle CEntity::GetComponent( EComponentType const type ) const
 {
 	UINT const componentsNum = m_components.Size();
 	for ( UINT i = 0; i < componentsNum; ++i )
 	{
 		SComponentHandle const handle = m_components[ i ];
-		if ( handle.m_type == EComponentType::CT_StaticMesh )
-		{
-			return handle;
-		}
-	}
-
-	return { 0, EComponentType::CT_INVALID };
-}
-
-SComponentHandle CEntity::AddComponentLight()
-{
-	SComponentHandle const handle = GComponentLightManager.AddComponent();
-	m_components.Add( handle );
-	return handle;
-}
-
-SComponentHandle CEntity::GetComponentLight() const
-{
-	UINT const componentsNum = m_components.Size();
-	for ( UINT i = 0; i < componentsNum; ++i )
-	{
-		SComponentHandle const handle = m_components[ i ];
-		if ( handle.m_type == EComponentType::CT_Light )
-		{
-			return handle;
-		}
-	}
-
-	return { 0, EComponentType::CT_INVALID };
-}
-
-SComponentHandle CEntity::AddComponentCamera()
-{
-	SComponentHandle const handle = GComponentCameraManager.AddComponent();
-	m_components.Add( handle );
-	return handle;
-}
-
-SComponentHandle CEntity::GetComponentCamera() const
-{
-	UINT const componentsNum = m_components.Size();
-	for ( UINT i = 0; i < componentsNum; ++i )
-	{
-		SComponentHandle const handle = m_components[ i ];
-		if ( handle.m_type == EComponentType::CT_Camera )
+		if ( handle.m_type == type )
 		{
 			return handle;
 		}

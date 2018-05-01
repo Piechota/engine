@@ -14,9 +14,9 @@ private:
 	UINT m_graphicsCameraID;
 
 public:
-	void SetMainCamera( UINT const cameraID )
+	void SetMainCamera( SComponentHandle const cameraHandle )
 	{
-		m_graphicsCameraID = cameraID;
+		m_graphicsCameraID = cameraHandle.m_index;
 	}
 
 	Vec3 GetMainCameraPosition() const;
