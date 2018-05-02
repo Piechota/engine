@@ -25,10 +25,12 @@ void csMain( uint3 dispatchID : SV_DispatchThreadID )
 	int inTexKernelRadius = int(MipMap);
 	int maxKernelDim = 2 * max( MaxKernelRadius, inTexKernelRadius ) + 1;
 
-	float2 distanceXY = max( 0.f, abs( 2.f * float2( dstCoord.xy ) * InvDstTextureSize - 1.f ) - 0.75f );
-	float distance = ceil( DstTextureSize * max( distanceXY.x, distanceXY.y ) );
+	float2 distanceXY = saturate( abs( 2.f * float2( dstCoord.xy ) * InvDstTextureSize - 1.f ) - 0.75f );
+	float distance = max( distanceXY.x, distanceXY.y );
+	distance = 0.f < distance ? ( distance + 0.15f ) : distance;
+	distance = ceil( DstTextureSize * distance );
 
-	int kernelRadius = min( MaxKernelRadius, max( inTexKernelRadius, int( distance ) * 2 ) );
+	int kernelRadius = min( MaxKernelRadius, max( inTexKernelRadius, int( distance ) ) );
 	int kernelDim = 2 * kernelRadius + 1;
 	int kernelSize = kernelDim * kernelDim;
 
@@ -56,7 +58,7 @@ void csMain( uint3 dispatchID : SV_DispatchThreadID )
 		for ( int currentX = sampleX0; currentX < sampleX1; ++currentX )
 		{
 			int x = kernelOffset + kernelX0 + currentX - sampleX0;
-			float kernelVal = 1.f;// GaussKernel[ y + x ];
+			float kernelVal = GaussKernel[ y + x ];
 
 			float2 uv = 1.25f * float2( currentX, currentY ) * InvDstTextureSize - 0.125f;
 			float4 color = SourceTex.SampleLevel( Sampler, uv, MipMap );
