@@ -99,6 +99,7 @@ void CRender::CreateLTCTexture( UINT16 const textureID, Byte* outData )
 
 	m_computeCL->Close();
 
+	UpdateConstBuffer();
 	m_computeCQ->ExecuteCommandLists( 1, (ID3D12CommandList* const*)&m_computeCL );
 	WaitForComputeQueue();
 
@@ -191,7 +192,8 @@ void CRender::InitConstBuffer()
 	CheckResult(m_device->CreateCommittedResource(&GHeapPropertiesUpload, D3D12_HEAP_FLAG_NONE, &descResource, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&m_constBufferResource)));
 	m_constBufferResource->SetName(L"ConstBufferResource");
 
-	CheckResult(m_constBufferResource->Map(0, nullptr, (void**)(&m_pConstBufferData)));
+	CheckResult(m_constBufferResource->Map(0, nullptr, (void**)(&m_pConstBufferMap)));
+	m_pConstBufferData = new Byte[ 1024 * MAX_OBJECTS ];
 }
 
 void CRender::InitSwapChain()
@@ -679,7 +681,7 @@ void CRender::DrawRenderData( ID3D12GraphicsCommandList* commandList, TArray< SC
 	D3D_PRIMITIVE_TOPOLOGY currentTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
 	Byte currentShader = ST_MAX;
 	Byte currentGeometry = UINT8_MAX;
-	Byte currentTexture[ SCommonRenderData::MAX_TEXTURES_NUM ];
+	UINT16 currentTexture[ SCommonRenderData::MAX_TEXTURES_NUM ];
 	memset( currentTexture, 0, sizeof( currentTexture ) );
 
 	D3D12_GPU_VIRTUAL_ADDRESS const constBufferStart = m_constBufferResource->GetGPUVirtualAddress();
@@ -692,7 +694,7 @@ void CRender::DrawRenderData( ID3D12GraphicsCommandList* commandList, TArray< SC
 		UINT const textureNum = pRenderData->m_texturesNum;
 		for ( UINT textureID = 0; textureID < textureNum; ++textureID )
 		{
-			Byte const texture = m_texturesIDs[ pRenderData->m_texturesOffset + textureID ];
+			UINT16 const texture = m_texturesIDs[ pRenderData->m_texturesOffset + textureID ];
 			if ( currentTexture[ textureID ] != texture )
 			{
 				if ( texture )
@@ -767,16 +769,18 @@ void CRender::DrawLights( ID3D12GraphicsCommandList * commandList )
 
 	UINT const lightNum = m_lightRenderData.Size();
 	UINT lightShader = LF_MAX;
+	UINT currentTextureID = 0;
 	for ( UINT lightID = 0; lightID < lightNum; ++lightID )
 	{
 		SLightRenderData const& light = m_lightRenderData[ lightID ];
 
 		if ( light.m_texturesNum )
 		{
-			Byte const textureID = m_texturesIDs[ light.m_texturesOffset ];
-			if ( textureID )
+			UINT16 const textureID = m_texturesIDs[ light.m_texturesOffset ];
+			if ( textureID && currentTextureID != textureID )
 			{
 				commandList->SetGraphicsRootDescriptorTable( 9, m_texturesDH.GetGPUDescriptorScaled( m_texturesDescriptorHeapOffset[ textureID ] ) );
+				currentTextureID = textureID;
 			}
 		}
 
@@ -954,8 +958,15 @@ void CRender::PreDrawFrame()
 	WaitForGraphicsQueue();
 }
 
+void CRender::UpdateConstBuffer()
+{
+	memcpy( m_pConstBufferMap, m_pConstBufferData, m_constBufferOffset );
+}
+
 void CRender::DrawFrame()
 {
+	UpdateConstBuffer();
+
 	ID3D12GraphicsCommandList* commandList = m_frameData[m_frameID].m_frameCL;
 	D3D12_CPU_DESCRIPTOR_HANDLE const frameRT = m_renderTargetDH.GetCPUDescriptor( m_frameID );
 	m_frameData[m_frameID].m_frameCA->Reset();
@@ -1080,7 +1091,7 @@ void CRender::DrawFrame()
 
 void CRender::Release()
 {
-	UINT const endFenceValue = m_fence->GetCompletedValue() + 1;
+	UINT64 const endFenceValue = m_fence->GetCompletedValue() + 1;
 	CheckResult(m_graphicsCQ->Signal(m_fence, endFenceValue));
 	CheckResult(m_fence->SetEventOnCompletion(endFenceValue, m_fenceEvent));
 	WaitForSingleObject(m_fenceEvent, INFINITE);
@@ -1129,7 +1140,8 @@ void CRender::Release()
 
 	m_constBufferResource->Unmap(0, nullptr);
 	m_constBufferResource->Release();
-	m_pConstBufferData = nullptr;
+	m_pConstBufferMap = nullptr;
+	delete[] m_pConstBufferData;
 
 	for ( UINT gbufferID = 0; gbufferID < GBB_MAX; ++gbufferID )
 	{
@@ -1549,7 +1561,7 @@ void CRender::WaitForComputeQueue()
 
 void CRender::ReinitShaders()
 {
-	UINT const endFenceValue = m_fence->GetCompletedValue() + 1;
+	UINT64 const endFenceValue = m_fence->GetCompletedValue() + 1;
 	CheckResult(m_graphicsCQ->Signal(m_fence, endFenceValue));
 	CheckResult(m_fence->SetEventOnCompletion(endFenceValue, m_fenceEvent));
 	WaitForSingleObject(m_fenceEvent, INFINITE);

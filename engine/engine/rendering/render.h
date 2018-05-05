@@ -31,8 +31,8 @@ struct SRenderFrameData
 
 struct SDescriptorsOffsets
 {
-	UINT8 m_rtvOffset;
-	UINT8 m_srvOffset;
+	UINT16 m_rtvOffset;
+	UINT16 m_srvOffset;
 };
 
 class CConstBufferCtx
@@ -136,7 +136,7 @@ private:
 
 	TArray< ID3D12Resource* >				m_uploadResources;
 	TArray< D3D12_RESOURCE_BARRIER >		m_resourceBarrier;
-	TStaticArray< Byte, 4 * MAX_OBJECTS>	m_texturesIDs;
+	TStaticArray< UINT16, 4 * MAX_OBJECTS>	m_texturesIDs;
 
 	TArray< SCommonRenderData >		m_commonRenderData[ RL_MAX ];
 	TArray< SLightRenderData >		m_lightRenderData;
@@ -149,6 +149,7 @@ private:
 
 	ID3D12Resource*					m_constBufferResource;
 	Byte*							m_pConstBufferData;
+	Byte*							m_pConstBufferMap;
 	UINT							m_constBufferOffset;
 
 	D3D12_GPU_VIRTUAL_ADDRESS		m_globalConstBufferAddress;
@@ -211,7 +212,7 @@ public:
 	void WaitForComputeQueue();
 
 	UINT GetTexturesOffset() const { return m_texturesIDs.Size(); }
-	void AddTextureID( Byte const textureID ) { m_texturesIDs.Add(textureID); }
+	void AddTextureID( UINT16 const textureID ) { m_texturesIDs.Add(textureID); }
 
 	void CommandRenderDataReserveNext( UINT const size, Byte const renderLayer ) { m_commonRenderData[renderLayer].Reserve( m_commonRenderData[renderLayer].Size() + size ); }
 	void LightRenderDataReserveNext( UINT const size ) { m_lightRenderData.Reserve( m_lightRenderData.Size() + size ); }
@@ -220,6 +221,8 @@ public:
 	void AddCommonRenderData( SCommonRenderData const& commonRenderData, Byte const renderLayer ) { m_commonRenderData[renderLayer].Add( commonRenderData ); }
 	void AddLightRenderData( SLightRenderData const& lightRenderData ) { m_lightRenderData.Add( lightRenderData ); }
 	void AddEnviroParticleRenderData( SShadowRenderData const& shadowRenderData ) { m_enviroParticleRenderData.Add( shadowRenderData ); }
+
+	void UpdateConstBuffer();
 
 #ifndef FINAL_BUILD
 	void ReinitShaders();

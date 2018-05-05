@@ -6,7 +6,7 @@ struct SComponentStaticMesh
 	Vec2 m_tiling;
 	Byte m_geometryInfoID;
 	Byte m_shaderID;
-	Byte m_textureID[ SCommonRenderData::MAX_TEXTURES_NUM ];
+	UINT16 m_textureID[ SCommonRenderData::MAX_TEXTURES_NUM ];
 
 	Byte m_layer;
 

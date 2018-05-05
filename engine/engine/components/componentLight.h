@@ -6,7 +6,7 @@ struct SComponentLight
 	float m_radius;
 	float m_fade;
 
-	Byte m_textureID;
+	UINT16 m_textureID;
 	Byte m_lightShader;
 };
 

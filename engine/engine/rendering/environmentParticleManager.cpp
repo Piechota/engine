@@ -177,6 +177,7 @@ void CEnvironmentParticleManager::InitParticles(UINT const initParticleNum, UINT
 		
 		m_particleCL->Close();
 		
+		GRender.UpdateConstBuffer();
 		GRender.ExecuteComputeQueue( 1, ( ID3D12CommandList* const* )( &m_particleCL ) );
 		GRender.WaitForComputeQueue();
 	}
