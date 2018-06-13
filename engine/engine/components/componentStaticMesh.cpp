@@ -26,8 +26,8 @@ void CComponentStaticMeshManager::FillRenderData() const
 		tObjectToView.Transpose();
 		tObjectToScreen.Transpose();
 
-		renderData.m_indicesNum = GGeometryInfo[ staticMesh.m_geometryInfoID ].m_indicesNum;
-		renderData.m_geometryID = GGeometryInfo[ staticMesh.m_geometryInfoID ].m_geometryID;
+		renderData.m_indicesNum = GRender.GetGeometryIndicesNum( staticMesh.m_geometryID );
+		renderData.m_geometryID = staticMesh.m_geometryID;
 		renderData.m_shaderID = staticMesh.m_shaderID;
 
 		renderData.m_texturesOffset = GRender.GetTexturesOffset();
@@ -72,8 +72,8 @@ void CComponentStaticMeshManager::FillEnviroParticleRenderData() const
 			Matrix4x4 tObjectToScreen = Math::Mul( objectToWorld, worldToScreen );
 			tObjectToScreen.Transpose();
 
-			renderData.m_indicesNum = GGeometryInfo[ staticMesh.m_geometryInfoID ].m_indicesNum;
-			renderData.m_geometryID = GGeometryInfo[ staticMesh.m_geometryInfoID ].m_geometryID;
+			renderData.m_indicesNum = GRender.GetGeometryIndicesNum( staticMesh.m_geometryID );
+			renderData.m_geometryID = staticMesh.m_geometryID;
 
 			CConstBufferCtx const cbCtx = GRender.GetConstBufferCtx( renderData.m_cbOffset, staticMesh.m_shaderID );
 			cbCtx.SetParam( &tObjectToScreen, sizeof( tObjectToScreen ), EShaderParameters::ObjectToScreen );

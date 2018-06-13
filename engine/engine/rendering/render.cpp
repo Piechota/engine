@@ -100,8 +100,9 @@ void CRender::CreateLTCTexture( UINT16 const textureID, Byte* outData )
 	m_computeCL->Close();
 
 	UpdateConstBuffer();
-	m_computeCQ->ExecuteCommandLists( 1, (ID3D12CommandList* const*)&m_computeCL );
-	WaitForComputeQueue();
+	m_computeCQ.ExecuteCommandLists( 1, (ID3D12CommandList* const*)&m_computeCL );
+	m_computeCQ.WaitCPU();
+	m_computeCQ.WaitCPU();
 
 	Byte* mipMapData = outData;
 	for ( UINT i = 0; i < mipMaps; ++i )
@@ -122,11 +123,9 @@ void CRender::CreateLTCTexture( UINT16 const textureID, Byte* outData )
 
 void CRender::InitCommands()
 {
-	D3D12_COMMAND_QUEUE_DESC descCQ = {};
-	descCQ.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-	descCQ.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-	CheckResult(m_device->CreateCommandQueue(&descCQ, IID_PPV_ARGS(&m_graphicsCQ)));
-	m_graphicsCQ->SetName(L"GraphicsCommandQueue");
+	m_graphicsCQ.Init(	m_device,	L"GraphicsCommandQueue",	D3D12_COMMAND_LIST_TYPE_DIRECT );
+	m_copyCQ.Init(		m_device,	L"CopyCommandQueue",		D3D12_COMMAND_LIST_TYPE_COPY );
+	m_computeCQ.Init(	m_device,	L"ComputeCommandQueue",		D3D12_COMMAND_LIST_TYPE_COMPUTE );
 
 	CheckResult(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_graphicsCA)));
 	m_graphicsCA->SetName(L"GraphicsCommandAllocator");
@@ -135,22 +134,12 @@ void CRender::InitCommands()
 	m_graphicsCL->SetName(L"GraphicsCommandList");
 	CheckResult(m_graphicsCL->Close());
 
-	descCQ.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-	descCQ.Type = D3D12_COMMAND_LIST_TYPE_COPY;
-	CheckResult(m_device->CreateCommandQueue(&descCQ, IID_PPV_ARGS(&m_copyCQ)));
-	m_copyCQ->SetName(L"CopyCommandQueue");
-
 	CheckResult(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_COPY, IID_PPV_ARGS(&m_copyCA)));
 	m_copyCA->SetName(L"CopyCommandAllocator");
 
 	CheckResult(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_COPY, m_copyCA, nullptr, IID_PPV_ARGS(&m_copyCL)));
 	m_copyCL->SetName(L"CopyCommandList");
 	CheckResult(m_copyCL->Close());
-
-	descCQ.Flags = D3D12_COMMAND_QUEUE_FLAG_DISABLE_GPU_TIMEOUT;
-	descCQ.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
-	CheckResult(m_device->CreateCommandQueue(&descCQ, IID_PPV_ARGS(&m_computeCQ)));
-	m_computeCQ->SetName(L"ComputeCommandQueue");
 
 	CheckResult(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_COMPUTE, IID_PPV_ARGS(&m_computeCA)));
 	m_computeCA->SetName(L"ComputeCommandAllocator");
@@ -210,7 +199,7 @@ void CRender::InitSwapChain()
 	descSwapChain.Windowed = TRUE;
 
 	IDXGISwapChain* swapChain;
-	CheckResult(m_factor->CreateSwapChain(m_graphicsCQ, &descSwapChain, &swapChain));
+	CheckResult(m_factor->CreateSwapChain(m_graphicsCQ.GetCommandQueue(), &descSwapChain, &swapChain));
 	m_swapChain = (IDXGISwapChain3*)swapChain;
 }
 
@@ -627,10 +616,17 @@ void CRender::InitShaders()
 
 void CRender::Init()
 {
+	m_uploadResourcesID = 0;
 	m_texturesFreeIDs.Resize( MAX_TEXTURES - 1 );
 	for ( UINT i = 0; i < (MAX_TEXTURES - 1); ++i )
 	{
 		m_texturesFreeIDs[ i ] = MAX_TEXTURES - i - 1;
+	}
+
+	m_geometryFreeIDs.Resize( MAX_GEOMETRY - 1 );
+	for ( UINT i = 0; i < (MAX_GEOMETRY - 1); ++i )
+	{
+		m_geometryFreeIDs[ i ] = MAX_GEOMETRY - i - 1;
 	}
 
 	m_constBufferOffset = 0;
@@ -647,7 +643,6 @@ void CRender::Init()
 	m_scissorRect.left = 0;
 	m_scissorRect.top = 0;
 
-	m_fenceValue = 0;
 	m_frameID = 0;
 
 #ifdef _DEBUG
@@ -657,12 +652,6 @@ void CRender::Init()
 
 	CheckResult(CreateDXGIFactory1(IID_PPV_ARGS(&m_factor)));
 	CheckResult(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&m_device)));
-
-	CheckResult(m_device->CreateFence(m_fenceValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence)));
-	++m_fenceValue;
-	m_fenceEvent = CreateEventEx(nullptr, FALSE, FALSE, EVENT_ALL_ACCESS);
-
-	m_geometryResources.Add( SGeometry() );
 
 	memset( m_texturesResources, 0, sizeof( m_texturesResources ) );
 
@@ -674,6 +663,14 @@ void CRender::Init()
 	InitRenderTargets();
 	InitRootSignatures();
 	InitShaders();
+
+	m_copyCA->Reset();
+	m_copyCL->Reset(m_copyCA, nullptr);
+	CreateFullscreenTriangleRes();
+	CreateCommonTextures();
+
+	GTextRenderManager.Init();
+	GEnvironmentParticleManager.Init( 128, 2, 10.f );
 }
 
 void CRender::DrawRenderData( ID3D12GraphicsCommandList* commandList, TArray< SCommonRenderData > const& renderData )
@@ -955,7 +952,7 @@ void CRender::PreDrawFrame()
 	GTextRenderManager.FillRenderData();
 	GDynamicGeometryManager.PreDraw();
 
-	WaitForGraphicsQueue();
+	m_graphicsCQ.WaitCPU();
 }
 
 void CRender::UpdateConstBuffer()
@@ -965,12 +962,31 @@ void CRender::UpdateConstBuffer()
 
 void CRender::DrawFrame()
 {
+	bool const copyNeeded = m_uploadResources[ m_uploadResourcesID & 1 ].Size();
+
 	UpdateConstBuffer();
 
 	ID3D12GraphicsCommandList* commandList = m_frameData[m_frameID].m_frameCL;
 	D3D12_CPU_DESCRIPTOR_HANDLE const frameRT = m_renderTargetDH.GetCPUDescriptor( m_frameID );
 	m_frameData[m_frameID].m_frameCA->Reset();
 	commandList->Reset( m_frameData[ m_frameID ].m_frameCA, nullptr );
+
+	if ( copyNeeded )
+	{
+		m_copyCL->Close();
+		m_copyCQ.ExecuteCommandLists(1, (ID3D12CommandList**)(&m_copyCL));
+		commandList->ResourceBarrier(m_resourceBarrier.Size(), m_resourceBarrier.Data());
+
+		++m_uploadResourcesID;
+		TArray< ID3D12Resource* >& uploadResources = m_uploadResources[ m_uploadResourcesID & 1 ];
+		UINT const uploadResNum = uploadResources.Size();
+		for ( UINT uploadResID = 0; uploadResID < uploadResNum; ++uploadResID )
+		{
+			uploadResources[uploadResID]->Release();
+		}
+		uploadResources.Clear();
+	}
+
 	commandList->SetDescriptorHeaps(1, &m_texturesDH.m_pDescriptorHeap);
 	commandList->SetGraphicsRootSignature(m_graphicsRS);
 	commandList->SetGraphicsRootConstantBufferView( 0, m_globalConstBufferAddress );
@@ -1073,7 +1089,13 @@ void CRender::DrawFrame()
 	commandList->ResourceBarrier(1, barriers);
 
 	CheckResult(commandList->Close());
-	m_graphicsCQ->ExecuteCommandLists(1, (ID3D12CommandList**)(&commandList));
+
+	if ( copyNeeded )
+	{
+		m_graphicsCQ.WaitGPU( m_copyCQ );
+	}
+
+	m_graphicsCQ.ExecuteCommandLists(1, (ID3D12CommandList**)(&commandList));
 
 	CheckResult(m_swapChain->Present(1, 0));
 
@@ -1091,22 +1113,18 @@ void CRender::DrawFrame()
 
 void CRender::Release()
 {
-	UINT64 const endFenceValue = m_fence->GetCompletedValue() + 1;
-	CheckResult(m_graphicsCQ->Signal(m_fence, endFenceValue));
-	CheckResult(m_fence->SetEventOnCompletion(endFenceValue, m_fenceEvent));
-	WaitForSingleObject(m_fenceEvent, INFINITE);
+	m_graphicsCQ.Release();
+	m_copyCQ.Release();
+	m_computeCQ.Release();
 
 	GEnvironmentParticleManager.Release();
 
-	m_copyCQ->Release();
 	m_copyCA->Release();
 	m_copyCL->Release();
 
-	m_graphicsCQ->Release();
 	m_graphicsCA->Release();
 	m_graphicsCL->Release();
 
-	m_computeCQ->Release();
 	m_computeCA->Release();
 	m_computeCL->Release();
 
@@ -1151,20 +1169,34 @@ void CRender::Release()
 	m_depthBuffertDH.Release();
 	m_fullscreenTriangleRes->Release();
 
-	UINT const geometryNum = m_geometryResources.Size();
-	for (UINT geometryID = 0; geometryID < geometryNum; ++geometryID)
 	{
-		m_geometryResources[geometryID].Release();
+		tStaticGeometryResManager::iterator tEnd = GStaticGeometryResources.end();
+		for ( tStaticGeometryResManager::iterator itr = GStaticGeometryResources.begin(); itr != tEnd; itr++ )
+		{
+			m_geometryResources[ itr->second.m_id ].Release();
+		}
 	}
 
-	tTextureResManager::iterator tEnd =	GTextureResources.end();
-	for (tTextureResManager::iterator itr = GTextureResources.begin(); itr != tEnd; itr++)
 	{
-		m_texturesResources[ itr->second ]->Release();
+		tTextureResManager::iterator tEnd = GTextureResources.end();
+		for ( tTextureResManager::iterator itr = GTextureResources.begin(); itr != tEnd; itr++ )
+		{
+			m_texturesResources[ itr->second.m_id ]->Release();
+		}
 	}
+
+	for ( UINT i = 0; i < 2; ++i )
+	{
+		UINT const uploadResourcesNum = m_uploadResources[ i ].Size();
+		for ( UINT r = 0; r < uploadResourcesNum; ++r )
+		{
+			m_uploadResources[ i ][ r ]->Release();
+		}
+	}
+
+	GTextRenderManager.Release();
 
 	m_swapChain->Release();
-	m_fence->Release();
 	m_factor->Release();
 	m_device->Release();
 
@@ -1173,22 +1205,23 @@ void CRender::Release()
 #endif
 }
 
-Byte CRender::AddGeometry( SGeometry const& geometry )
+UINT16 CRender::AddGeometry( SGeometry const& geometry )
 {
-	Byte const geometryID = Byte( m_geometryResources.Size() );
-	m_geometryResources.Add( geometry );
+	UINT16 const geometryFreeID = m_geometryFreeIDs.PopBack();
+	memcpy( &m_geometryResources[ geometryFreeID ], &geometry, sizeof( geometry ) );
 
-	return geometryID;
+	return geometryFreeID;
 }
 
-SGeometry& CRender::GetGeometry( Byte const geometryID )
+SGeometry& CRender::GetGeometry( UINT16 const geometryID )
 {
 	return m_geometryResources[ geometryID ];
 }
 
-void CRender::ReleaseGeometry( Byte const geometryID )
+void CRender::ReleaseGeometry( UINT16 const geometryID )
 {
 	m_geometryResources[ geometryID ].Release();
+	m_geometryFreeIDs.Add( geometryID );
 }
 
 void CRender::DrawFullscreenTriangle( ID3D12GraphicsCommandList* commandList )
@@ -1230,7 +1263,7 @@ void CRender::CreateFullscreenTriangleRes()
 
 	ID3D12Resource* verticesUploadRes;
 	CheckResult(m_device->CreateCommittedResource(&GHeapPropertiesUpload, D3D12_HEAP_FLAG_NONE, &descVertices, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&verticesUploadRes)));
-	m_uploadResources.Add(verticesUploadRes);
+	m_uploadResources[ m_uploadResourcesID & 1 ].Add(verticesUploadRes);
 	void* pGPU;
 	verticesUploadRes->Map(0, nullptr, &pGPU);
 
@@ -1269,32 +1302,9 @@ void CRender::CreateCommonTextures()
 
 	for (unsigned int texture = 0; texture < ARRAYSIZE(textures); ++texture)
 	{
-		DirectX::TexMetadata texMeta;
-		DirectX::ScratchImage image;
-		if ( DirectX::LoadFromWICFile( textures[ texture ], DirectX::WIC_FLAGS_NONE, &texMeta, image ) != S_OK )
-		{
-			CheckResult( DirectX::LoadFromDDSFile( textures[ texture ], DirectX::DDS_FLAGS_NONE, &texMeta, image ) );
-		}
-
-		STextureInfo textureInfo;
-		textureInfo.m_width = UINT(texMeta.width);
-		textureInfo.m_height = UINT(texMeta.height);
-		textureInfo.m_format = texMeta.format;
-		textureInfo.m_mipLevels = Byte(texMeta.mipLevels);
-
-		ASSERT( textureInfo.m_format != DXGI_FORMAT_UNKNOWN );
-		UINT16 const textureID = GRender.LoadResource( textureInfo, image.GetPixels() );
-		GTextureResources[ textures[ texture ] ] = textureID;
+		UINT16 const textureID = GTextureResources[ textures[ texture ] ].m_id;
 		m_commonTexturesDescriptorHeapOffset[ texture ] = m_texturesDescriptorHeapOffset[ textureID ];
 	}
-}
-
-void CRender::BeginLoadResources(unsigned int const textureNum)
-{
-	m_copyCA->Reset();
-	m_copyCL->Reset(m_copyCA, nullptr);
-	CreateFullscreenTriangleRes();
-	CreateCommonTextures();
 }
 
 UINT16 CRender::LoadResource( STextureInfo const& texture, Byte const* const data )
@@ -1332,7 +1342,7 @@ UINT16 CRender::LoadResource( STextureInfo const& texture, Byte const* const dat
 
 	ID3D12Resource* textureUploadRes;
 	CheckResult(m_device->CreateCommittedResource(&GHeapPropertiesUpload, D3D12_HEAP_FLAG_NONE, &descTexture, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&textureUploadRes)));
-	m_uploadResources.Add(textureUploadRes);
+	m_uploadResources[ m_uploadResourcesID & 1 ].Add(textureUploadRes);
 
 	void* pGPU;
 	textureUploadRes->Map(0, nullptr, &pGPU);
@@ -1386,9 +1396,11 @@ UINT16 CRender::LoadResource( STextureInfo const& texture, Byte const* const dat
 	return textureFreeID;
 }
 
-Byte CRender::LoadResource( SGeometryData const & geometryData )
+UINT16 CRender::LoadResource( SGeometryData const & geometryData )
 {
-	SGeometry geometry;
+	UINT16 const geometryFreeID = m_geometryFreeIDs.PopBack();
+	SGeometry& geometry = m_geometryResources[ geometryFreeID ];
+	geometry.Init();
 
 	UINT const verticesNum = geometryData.m_vertices.Size();
 	UINT const indicesNum = geometryData.m_indices.Size();
@@ -1408,7 +1420,7 @@ Byte CRender::LoadResource( SGeometryData const & geometryData )
 
 	ID3D12Resource* verticesUploadRes;
 	CheckResult(m_device->CreateCommittedResource(&GHeapPropertiesUpload, D3D12_HEAP_FLAG_NONE, &descVertices, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&verticesUploadRes)));
-	m_uploadResources.Add(verticesUploadRes);
+	m_uploadResources[ m_uploadResourcesID & 1 ].Add(verticesUploadRes);
 	void* pGPU;
 	verticesUploadRes->Map(0, nullptr, &pGPU);
 	memcpy( pGPU, geometryData.m_vertices.Data(), sizeof( SSimpleObjectVertexFormat ) * verticesNum );
@@ -1430,7 +1442,7 @@ Byte CRender::LoadResource( SGeometryData const & geometryData )
 
 	ID3D12Resource* indicesUploadRes;
 	CheckResult(m_device->CreateCommittedResource(&GHeapPropertiesUpload, D3D12_HEAP_FLAG_NONE, &descIndices, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&indicesUploadRes)));
-	m_uploadResources.Add(indicesUploadRes);
+	m_uploadResources[ m_uploadResourcesID & 1 ].Add(indicesUploadRes);
 	indicesUploadRes->Map(0, nullptr, &pGPU);
 	memcpy( pGPU, geometryData.m_indices.Data(), sizeof( UINT16 ) * indicesNum );
 	indicesUploadRes->Unmap( 0, nullptr );
@@ -1443,9 +1455,6 @@ Byte CRender::LoadResource( SGeometryData const & geometryData )
 	geometry.m_indexBufferView.BufferLocation = geometry.m_indicesRes->GetGPUVirtualAddress();
 	geometry.m_indexBufferView.Format = DXGI_FORMAT_R16_UINT;
 	geometry.m_indexBufferView.SizeInBytes = indicesNum * sizeof( UINT16 );
-
-	Byte const geometryID = Byte( m_geometryResources.Size() );
-	m_geometryResources.Add( geometry );
 
 	D3D12_RESOURCE_BARRIER barrier;
 	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -1460,44 +1469,14 @@ Byte CRender::LoadResource( SGeometryData const & geometryData )
 	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_INDEX_BUFFER;
 	m_resourceBarrier.Add( barrier );
 
-	return geometryID;
-}
+	m_geometryIndices[ geometryFreeID ] = indicesNum;
 
-void CRender::EndLoadResources()
-{
-	m_copyCL->Close();
-	m_copyCQ->ExecuteCommandLists(1, (ID3D12CommandList**)(&m_copyCL));
-
-	GTextRenderManager.Init();
-	GEnvironmentParticleManager.Init( 128, 2, 10.f );
+	return geometryFreeID;
 }
 
 void CRender::ExecuteComputeQueue( UINT const commandListNum, ID3D12CommandList* const* pCommandLists )
 {
-	m_computeCQ->ExecuteCommandLists( commandListNum, pCommandLists );
-}
-
-void CRender::WaitForResourcesLoad()
-{
-	m_graphicsCA->Reset();
-	m_graphicsCL->Reset(m_graphicsCA, nullptr);
-
-	m_graphicsCL->ResourceBarrier(m_resourceBarrier.Size(), m_resourceBarrier.Data());
-	m_graphicsCL->Close();
-
-	m_copyCQ->Signal( m_fence, m_fenceValue );
-	m_graphicsCQ->Wait( m_fence, m_fenceValue );
-	m_graphicsCQ->ExecuteCommandLists(1, (ID3D12CommandList**)(&m_graphicsCL));
-	++m_fenceValue;
-
-	WaitForGraphicsQueue();
-
-	UINT const uploadResNum = m_uploadResources.Size();
-	for ( UINT uploadResID = 0; uploadResID < uploadResNum; ++uploadResID )
-	{
-		m_uploadResources[uploadResID]->Release();
-	}
-	m_uploadResources.Free();
+	m_computeCQ.ExecuteCommandLists( commandListNum, pCommandLists );
 }
 
 CConstBufferCtx CRender::GetConstBufferCtx( D3D12_GPU_VIRTUAL_ADDRESS& outCbOffset, Byte const shader )
@@ -1537,34 +1516,9 @@ void CRender::SetConstBuffer( D3D12_GPU_VIRTUAL_ADDRESS& outConstBufferAddress, 
 	m_constBufferOffset += cbSize;
 }
 
-void CRender::WaitForCopyQueue()
-{
-	CheckResult(m_copyCQ->Signal(m_fence, m_fenceValue));
-	CheckResult(m_fence->SetEventOnCompletion(m_fenceValue, m_fenceEvent));
-	WaitForSingleObject(m_fenceEvent, INFINITE);
-	++m_fenceValue;
-}
-void CRender::WaitForGraphicsQueue()
-{
-	CheckResult(m_graphicsCQ->Signal(m_fence, m_fenceValue));
-	CheckResult(m_fence->SetEventOnCompletion(m_fenceValue, m_fenceEvent));
-	WaitForSingleObject(m_fenceEvent, INFINITE);
-	++m_fenceValue;
-}
-void CRender::WaitForComputeQueue()
-{
-	CheckResult(m_computeCQ->Signal(m_fence, m_fenceValue));
-	CheckResult(m_fence->SetEventOnCompletion(m_fenceValue, m_fenceEvent));
-	WaitForSingleObject(m_fenceEvent, INFINITE);
-	++m_fenceValue;
-}
-
 void CRender::ReinitShaders()
 {
-	UINT64 const endFenceValue = m_fence->GetCompletedValue() + 1;
-	CheckResult(m_graphicsCQ->Signal(m_fence, endFenceValue));
-	CheckResult(m_fence->SetEventOnCompletion(endFenceValue, m_fenceEvent));
-	WaitForSingleObject(m_fenceEvent, INFINITE);
+	m_graphicsCQ.WaitCPU();
 
 	for (unsigned int shaderID = 0; shaderID < ST_MAX; ++shaderID)
 	{
@@ -1584,6 +1538,10 @@ void CRender::ReinitShaders()
 	InitShaders();
 }
 
+void CRender::WaitForComputeQueue()
+{
+	m_computeCQ.WaitCPU();
+}
 
 void CConstBufferCtx::SetParam( void const* pData, UINT16 const size, EShaderParameters const param ) const
 {
@@ -1593,3 +1551,4 @@ void CConstBufferCtx::SetParam( void const* pData, UINT16 const size, EShaderPar
 		memcpy( m_pConstBuffer + paramOffset, pData, size );
 	}
 }
+

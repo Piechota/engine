@@ -4,7 +4,7 @@ struct SComponentStaticMesh
 {
 	Vec3 m_color;
 	Vec2 m_tiling;
-	Byte m_geometryInfoID;
+	UINT16 m_geometryID;
 	Byte m_shaderID;
 	UINT16 m_textureID[ SCommonRenderData::MAX_TEXTURES_NUM ];
 
@@ -14,7 +14,7 @@ struct SComponentStaticMesh
 	{
 		m_color = Vec3::ONE;
 		m_tiling = Vec2::ONE;
-		m_geometryInfoID = 0;
+		m_geometryID = 0;
 		m_shaderID = 0;
 		m_layer = 0;
 

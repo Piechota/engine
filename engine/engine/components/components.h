@@ -21,16 +21,6 @@ enum ELightType
 	LT_MAX
 };
 
-enum EGeometry
-{
-	G_SPACESHIP,
-	G_BOX,
-	G_SCENE_TEST,
-	G_PLANE,
-
-	G_MAX
-};
-
 enum ESoundEffectType
 {
 	SET_SHOOT0,
@@ -51,15 +41,7 @@ enum ECollisionFlag
 	CF_ENEMY_BULLET		= 1 << 3,
 };
 
-struct SGeometryInfo
-{
-	UINT m_indicesNum;
-	Byte m_geometryID;
-};
-POD_TYPE( SGeometryInfo )
-
 extern SViewObject GViewObject;
-extern SGeometryInfo GGeometryInfo[ G_MAX ];
 
 enum EComponentType
 {

@@ -2,12 +2,13 @@
 
 #include "../headers.h"
 #include "../resources/resourceManager.h"
+#include "../resources/texture.h"
 #include "renderConstant.h"
 #include "vertexFormats.h"
 #include "geometry.h"
 #include "descriptorHeap.h"
+#include "commandQueue.h"
 #include "shaderRes.h"
-#include "../resources/texture.h"
 #include "textRenderManager.h"
 #include "environmentParticleManager.h"
 
@@ -57,6 +58,7 @@ private:
 		FRAME_NUM = 3,
 		MAX_OBJECTS = 2048,
 		MAX_TEXTURES = 2048,
+		MAX_GEOMETRY = 1024,
 	};
 
 	enum EGlobalBufferBuffers
@@ -85,22 +87,18 @@ private:
 	ID3D12Device*					m_device;
 	IDXGIFactory4*					m_factor;
 
-	ID3D12Fence*					m_fence;
-	HANDLE							m_fenceEvent;
-	UINT							m_fenceValue;
-
 	D3D12_VIEWPORT					m_viewport;
 	D3D12_RECT						m_scissorRect;
 
-	ID3D12CommandQueue*				m_copyCQ;
+	CCommandQueue					m_copyCQ;
 	ID3D12CommandAllocator*			m_copyCA;
 	ID3D12GraphicsCommandList*		m_copyCL;
 
-	ID3D12CommandQueue*				m_graphicsCQ;
+	CCommandQueue					m_graphicsCQ;
 	ID3D12CommandAllocator*			m_graphicsCA;
 	ID3D12GraphicsCommandList*		m_graphicsCL;
 
-	ID3D12CommandQueue*				m_computeCQ;
+	CCommandQueue					m_computeCQ;
 	ID3D12CommandAllocator*			m_computeCA;
 	ID3D12GraphicsCommandList*		m_computeCL;
 
@@ -126,7 +124,9 @@ private:
 
 	SDescriptorsOffsets				m_globalBufferDescriptorsOffsets[ GBB_MAX ];
 
-	TArray< SGeometry >				m_geometryResources;
+	SGeometry										m_geometryResources[ MAX_GEOMETRY ];
+	UINT											m_geometryIndices[ MAX_GEOMETRY ]; //GeometryInfo 
+	TStaticArray< UINT16, MAX_GEOMETRY - 1 >		m_geometryFreeIDs;
 
 	UINT16											m_texturesDescriptorHeapOffset[ MAX_TEXTURES ];
 	STextureInfo									m_texturesInfo[ MAX_TEXTURES ];
@@ -134,7 +134,8 @@ private:
 	TStaticArray< UINT16, MAX_TEXTURES - 1 >		m_texturesFreeIDs;
 	UINT16											m_commonTexturesDescriptorHeapOffset[ COMMON_TEXTURE_MAX ];
 
-	TArray< ID3D12Resource* >				m_uploadResources;
+	UINT									m_uploadResourcesID;
+	TArray< ID3D12Resource* >				m_uploadResources[ 2 ];
 	TArray< D3D12_RESOURCE_BARRIER >		m_resourceBarrier;
 	TStaticArray< UINT16, 4 * MAX_OBJECTS>	m_texturesIDs;
 
@@ -191,25 +192,18 @@ public:
 
 	void CreateLTCTexture( UINT16 const textureID, Byte* outData  );
 
-	Byte AddGeometry( SGeometry const& geometry );
-	SGeometry& GetGeometry( Byte const geometryID );
-	void ReleaseGeometry( Byte const geometryID );
+	UINT16 AddGeometry( SGeometry const& geometry );
+	SGeometry& GetGeometry( UINT16 const geometryID );
+	void ReleaseGeometry( UINT16 const geometryID );
 
-	void BeginLoadResources(unsigned int const textureNum);
 	UINT16 LoadResource(STextureInfo const& texture, Byte const* const data );
-	Byte LoadResource(SGeometryData const& geometryData);
-	void EndLoadResources();
-	void WaitForResourcesLoad();
+	UINT16 LoadResource(SGeometryData const& geometryData);
 
 	CConstBufferCtx GetConstBufferCtx( D3D12_GPU_VIRTUAL_ADDRESS& outCbOffset, Byte const shader );
 	CConstBufferCtx GetLightConstBufferCtx( D3D12_GPU_VIRTUAL_ADDRESS& outCbOffset, Byte const shader );
 	void SetConstBuffer( D3D12_GPU_VIRTUAL_ADDRESS& outConstBufferAddress, Byte* const pData, UINT const size );
 
 	void ExecuteComputeQueue( UINT const commandListNum, ID3D12CommandList* const* pCommandLists );
-
-	void WaitForCopyQueue();
-	void WaitForGraphicsQueue();
-	void WaitForComputeQueue();
 
 	UINT GetTexturesOffset() const { return m_texturesIDs.Size(); }
 	void AddTextureID( UINT16 const textureID ) { m_texturesIDs.Add(textureID); }
@@ -237,6 +231,13 @@ public: //Getters/setters
 
 	void SetHWND(HWND& hwnd) { m_hwnd = hwnd; }
 	HWND SetHWND() const { return m_hwnd; }
+
+	void WaitForComputeQueue();
+
+	UINT GetGeometryIndicesNum( UINT16 const geometryID ) const
+	{
+		return m_geometryIndices[ geometryID ];
+	}
 
 	STextureInfo GetTextureInfo( UINT const textureID ) const
 	{

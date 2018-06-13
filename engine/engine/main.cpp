@@ -16,7 +16,6 @@ CSystemInput GSystemInput;
 CTimer GTimer;
 
 SViewObject GViewObject;
-SGeometryInfo GGeometryInfo[ G_MAX ];
 CStaticSound GSounds[SET_MAX];
 
 int GWidth = 800;
@@ -70,14 +69,14 @@ void InitGame()
 		{
 			SComponentStaticMesh& staticMeshComponent = GComponentStaticMeshManager.GetComponent( staticMeshHandle );
 			staticMeshComponent.m_tiling.Set( 10.f, 10.f );
-			staticMeshComponent.m_geometryInfoID = G_BOX;
+			staticMeshComponent.m_geometryID = GStaticGeometryResources["../content/models/box"].m_id;
 			staticMeshComponent.m_layer = RL_OPAQUE;
 			staticMeshComponent.m_shaderID = 0;
-			staticMeshComponent.m_textureID[ 0 ] = GTextureResources[ L"../content/textures/pbr_test_b.dds" ];
-			staticMeshComponent.m_textureID[ 1 ] = GTextureResources[ L"../content/textures/pbr_test_n.dds" ];
-			staticMeshComponent.m_textureID[ 2 ] = GTextureResources[ L"../content/textures/pbr_test_r.dds" ];
-			staticMeshComponent.m_textureID[ 3 ] = GTextureResources[ L"../content/textures/pbr_test_m.dds" ];
-			staticMeshComponent.m_textureID[ 4 ] = GTextureResources[ L"../content/textures/common/black.png" ];
+			staticMeshComponent.m_textureID[ 0 ] = GTextureResources[ L"../content/textures/pbr_test_b.dds" ].m_id;
+			staticMeshComponent.m_textureID[ 1 ] = GTextureResources[ L"../content/textures/pbr_test_n.dds" ].m_id;
+			staticMeshComponent.m_textureID[ 2 ] = GTextureResources[ L"../content/textures/pbr_test_r.dds" ].m_id;
+			staticMeshComponent.m_textureID[ 3 ] = GTextureResources[ L"../content/textures/pbr_test_m.dds" ].m_id;
+			staticMeshComponent.m_textureID[ 4 ] = GTextureResources[ L"../content/textures/common/black.png" ].m_id;
 		}
 
 		GComponentStaticMeshManager.RegisterRenderComponents( transformHandle, staticMeshHandle );
@@ -105,7 +104,7 @@ void InitGame()
 			SComponentStaticMesh& staticMeshComponent = GComponentStaticMeshManager.GetComponent( staticMeshHandle );
 			staticMeshComponent.m_color.Set( 1.f, 1.f, 1.f );
 			staticMeshComponent.m_tiling.Set( 1.f, 1.f );
-			staticMeshComponent.m_geometryInfoID = G_PLANE;
+			staticMeshComponent.m_geometryID = GStaticGeometryResources["../content/models/plane"].m_id;
 			staticMeshComponent.m_layer = RL_UNLIT;
 			staticMeshComponent.m_shaderID = Byte(ST_OBJECT_DRAW_SIMPLE);
 			memset( staticMeshComponent.m_textureID, 0, sizeof( staticMeshComponent.m_textureID ) );
@@ -145,18 +144,18 @@ void InitGame()
 			SComponentStaticMesh& staticMeshComponent = GComponentStaticMeshManager.GetComponent( staticMeshHandle );
 			staticMeshComponent.m_color.Set( 1.f, 1.f, 1.f );
 			staticMeshComponent.m_tiling.Set( 1.f, 1.f );
-			staticMeshComponent.m_geometryInfoID = G_PLANE;
+			staticMeshComponent.m_geometryID = GStaticGeometryResources["../content/models/plane"].m_id;
 			staticMeshComponent.m_layer = RL_UNLIT;
 			staticMeshComponent.m_shaderID = Byte(ST_OBJECT_DRAW_SIMPLE_TEXTURE);
 			memset( staticMeshComponent.m_textureID, 0, sizeof( staticMeshComponent.m_textureID ) );
-			staticMeshComponent.m_textureID[ 0 ] = GTextureResources[ L"../content/textures/stained_glass.dds" ];
+			staticMeshComponent.m_textureID[ 0 ] = GTextureResources[ L"../content/textures/stained_glass.dds" ].m_id;
 		}
 
 		//light
 		{
 			SComponentLight& lightComponent = GComponentLightManager.GetComponent( lightHandle );
 			lightComponent.m_color.Set( 2.f, 2.f, 2.f );
-			lightComponent.m_textureID = GTextureResources[ L"../content/textures/stained_glass.ltc.dds" ];
+			lightComponent.m_textureID = GTextureResources[ L"../content/textures/stained_glass.ltc.dds" ].m_id;
 			lightComponent.m_lightShader = Byte( ELightFlags::LF_LTC_TEXTURE );
 		}
 
@@ -218,74 +217,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
 	GRender.SetWindowHeight(GHeight);
 	GRender.SetHWND(hwnd);
 
-	char const* meshes[] =
-	{
-		"../content/models/spaceship",
-		"../content/models/box",
-		"../content/models/scene_test",
-		"../content/models/plane",
-	};
-	CT_ASSERT( ARRAYSIZE( meshes ) == G_MAX );
-
-	wchar_t const* textures[] =
-	{
-		L"../content/textures/sdf_font_512.png",
-		L"../content/textures/common/black.png",
-		L"../content/textures/spaceship_d.png",
-		L"../content/textures/spaceship_n.png",
-		L"../content/textures/spaceship_e.png",
-		L"../content/textures/spaceship_s.png",
-		L"../content/textures/Metal_Crystals_d.dds",
-		L"../content/textures/Metal_Crystals_n.dds",
-		L"../content/textures/Metal_Crystals_s.dds",
-		L"../content/textures/pbr_test_b.dds",
-		L"../content/textures/pbr_test_n.dds",
-		L"../content/textures/pbr_test_r.dds",
-		L"../content/textures/pbr_test_m.dds",
-		L"../content/textures/rainDrop.png",
-		L"../content/textures/snow.png",
-		//L"../content/textures/lena.dds",
-		//L"../content/textures/lena_test.dds",
-		L"../content/textures/stained_glass.dds",
-		L"../content/textures/stained_glass.ltc.dds",
-	};
-
 	GRender.Init();
 
 	GComponentLightManager.SetDirectLightColor( Vec3::ZERO );
 	GComponentLightManager.SetDirectLightDir( Vec3( 0.f, 1.f, 1.f ).GetNormalized() );
 	GComponentLightManager.SetAmbientLightColor( Vec3( 0.2f, 0.2f, 0.2f ) );
-
-	GRender.BeginLoadResources(ARRAYSIZE(textures));
-
-	for ( UINT meshID = 0; meshID < ARRAYSIZE( meshes ); ++meshID )
-	{
-		SGeometryData geometryData;
-		GGeometryLoader.LoadMesh( geometryData, meshes[ meshID ] );
-		GGeometryInfo[ meshID ].m_geometryID = GRender.LoadResource( geometryData );
-		GGeometryInfo[ meshID ].m_indicesNum = geometryData.m_indices.Size();
-	}
-
-	for (unsigned int textureID = 0; textureID < ARRAYSIZE(textures); ++textureID)
-	{
-		DirectX::TexMetadata texMeta;
-		DirectX::ScratchImage image;
-		if ( DirectX::LoadFromWICFile( textures[ textureID ], DirectX::WIC_FLAGS_NONE, &texMeta, image ) != S_OK )
-		{
-			CheckResult( DirectX::LoadFromDDSFile( textures[ textureID ], DirectX::DDS_FLAGS_NONE, &texMeta, image ) );
-		}
-
-		STextureInfo texture;
-		texture.m_width = UINT(texMeta.width);
-		texture.m_height = UINT(texMeta.height);
-		texture.m_format = texMeta.format;
-		texture.m_mipLevels = Byte(texMeta.mipLevels);
-
-		ASSERT( texture.m_format != DXGI_FORMAT_UNKNOWN );
-		GTextureResources[ textures[ textureID ] ] = GRender.LoadResource( texture, image.GetPixels() );
-	}
-
-	GRender.EndLoadResources();
 
 	GInputManager.SetHWND(hwnd);
 
@@ -309,11 +245,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
 		GSounds[soundID] = GSoundEngine.CreateStaticSound(sounds[soundID]);
 	}
 
-	GRender.WaitForResourcesLoad();
-
 #if defined( CREATE_LTC_TEX )
 	{
-		UINT16 const textureID = GTextureResources[ L"../content/textures/stained_glass.dds" ];
+		UINT16 const textureID = GTextureResources[ L"../content/textures/stained_glass.dds" ].m_id;
 		STextureInfo const textureInfo = GRender.GetTextureInfo( textureID );
 
 		DirectX::ScratchImage ltcTex;
@@ -354,7 +288,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
 		}
 		GInputManager.Tick();
 
-		DrawDebugInfo();
+		//DrawDebugInfo();
 
 		GRender.PreDrawFrame();
 		GRender.DrawFrame();

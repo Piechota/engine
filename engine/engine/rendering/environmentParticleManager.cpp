@@ -49,7 +49,7 @@ void CEnvironmentParticleManager::Init( UINT const initParticleNum, UINT const b
 
 	InitParticles( initParticleNum, boxesNum, boxesSize );
 
-	m_texture = GTextureResources[ L"../content/textures/snow.png" ];
+	m_texture = GTextureResources[ L"../content/textures/snow.png" ].m_id;
 }
 
 void CEnvironmentParticleManager::AllocateBuffers()

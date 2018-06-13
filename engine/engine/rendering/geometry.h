@@ -38,7 +38,7 @@ struct SGeometry
 		}
 	}
 
-	SGeometry()
+	void Init()
 	{
 		m_indexBufferView.BufferLocation = UINT64_MAX;
 		m_indexBufferView.SizeInBytes = UINT_MAX;
@@ -52,3 +52,5 @@ struct SGeometry
 		m_vertexRes = nullptr;
 	}
 };
+POD_TYPE( SGeometry );
+

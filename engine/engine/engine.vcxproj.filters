@@ -203,5 +203,8 @@
     <ClInclude Include="resources\resourceManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="rendering\commandQueue.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

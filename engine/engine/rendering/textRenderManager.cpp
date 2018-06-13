@@ -154,7 +154,7 @@ SGlyphData const GGlyphData[] =
 void CTextRenderManager::Init()
 {
 	m_dynGeometryID = GDynamicGeometryManager.AllocateGeometry( CHAR_MAX_NUM * 4 * sizeof( SPosUvVertexFormat ), sizeof( SPosUvVertexFormat ), CHAR_MAX_NUM * 6 * ( GDXGIFormatsBitsSize[ DXGI_FORMAT_R16_UINT ] / 8 ), DXGI_FORMAT_R16_UINT );
-	m_fontTexture = GTextureResources[ L"../content/textures/sdf_font_512.png" ];
+	m_fontTexture = GTextureResources[ L"../content/textures/sdf_font_512.png" ].m_id;
 }
 
 void CTextRenderManager::Print( Vec4 const color, Vec2 position, float const size, char const* msg )
@@ -244,5 +244,9 @@ void CTextRenderManager::FillRenderData()
 	m_textRenderInfos.Clear();
 }
 
+void CTextRenderManager::Release()
+{
+	GDynamicGeometryManager.ReleaseGeometry( m_dynGeometryID );
+}
 
 CTextRenderManager GTextRenderManager;

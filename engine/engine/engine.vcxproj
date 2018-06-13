@@ -228,6 +228,7 @@
     <ClInclude Include="components\componentTransform.h" />
     <ClInclude Include="core.h" />
     <ClInclude Include="entity.h" />
+    <ClInclude Include="rendering\commandQueue.h" />
     <ClInclude Include="rendering\constBuffers.h" />
     <ClInclude Include="rendering\descriptorHeap.h" />
     <ClInclude Include="rendering\dynamicGeometryManager.h" />

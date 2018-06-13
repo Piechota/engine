@@ -8,4 +8,3 @@ struct STextureInfo
 };
 POD_TYPE( STextureInfo )
 
-extern tTextureResManager GTextureResources;

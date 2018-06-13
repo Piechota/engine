@@ -26,6 +26,7 @@ public:
 	void Init();
 	void Print( Vec4 const color, Vec2 position, float const size, char const* msg );
 	void FillRenderData();
+	void Release();
 };
 
 extern CTextRenderManager GTextRenderManager;
