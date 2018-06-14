@@ -1543,9 +1543,9 @@ void CRender::WaitForComputeQueue()
 	m_computeCQ.WaitCPU();
 }
 
-void CConstBufferCtx::SetParam( void const* pData, UINT16 const size, EShaderParameters const param ) const
+void CConstBufferCtx::SetParam( void const* pData, UINT16 const size, uint32_t const paramHash ) const
 {
-	UINT16 const paramOffset = m_shader->GetOffset( param );
+	UINT16 const paramOffset = m_shader->GetOffset( paramHash );
 	if ( paramOffset != 0xFFFF )
 	{
 		memcpy( m_pConstBuffer + paramOffset, pData, size );

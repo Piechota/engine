@@ -38,10 +38,10 @@ void CComponentStaticMeshManager::FillRenderData() const
 		}
 
 		CConstBufferCtx const cbCtx = GRender.GetConstBufferCtx( renderData.m_cbOffset, staticMesh.m_shaderID );
-		cbCtx.SetParam( &tObjectToScreen,		sizeof( tObjectToScreen ),	EShaderParameters::ObjectToScreen );
-		cbCtx.SetParam( &tObjectToView,		3 * sizeof( Vec4 ),				EShaderParameters::ObjectToView );
-		cbCtx.SetParam( &staticMesh.m_color,	sizeof( Vec4 ),				EShaderParameters::Color );
-		cbCtx.SetParam( &staticMesh.m_tiling,	sizeof( Vec2 ),				EShaderParameters::Tiling );
+		cbCtx.SetParam( &tObjectToScreen,		sizeof( tObjectToScreen ),	Hash( "ObjectToScreen" ) );
+		cbCtx.SetParam( &tObjectToView,		3 * sizeof( Vec4 ),				Hash( "ObjectToView" ) );
+		cbCtx.SetParam( &staticMesh.m_color,	sizeof( Vec4 ),				Hash( "Color" ) );
+		cbCtx.SetParam( &staticMesh.m_tiling,	sizeof( Vec2 ),				Hash( "Tiling" ) );
 
 		GRender.AddCommonRenderData( renderData, staticMesh.m_layer );
 	}
@@ -76,7 +76,7 @@ void CComponentStaticMeshManager::FillEnviroParticleRenderData() const
 			renderData.m_geometryID = staticMesh.m_geometryID;
 
 			CConstBufferCtx const cbCtx = GRender.GetConstBufferCtx( renderData.m_cbOffset, staticMesh.m_shaderID );
-			cbCtx.SetParam( &tObjectToScreen, sizeof( tObjectToScreen ), EShaderParameters::ObjectToScreen );
+			cbCtx.SetParam( &tObjectToScreen, sizeof( tObjectToScreen ), Hash( "ObjectToScreen" ) );
 
 			GRender.AddEnviroParticleRenderData( renderData );
 		}

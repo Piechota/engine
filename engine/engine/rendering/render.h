@@ -47,7 +47,7 @@ public:
 		: m_shader( shader )
 		, m_pConstBuffer( pConstBuffer )
 	{}
-	void SetParam( void const* pData, UINT16 const size, EShaderParameters const param ) const;
+	void SetParam( void const* pData, UINT16 const size, uint32_t const paramHash ) const;
 };
 
 class CRender

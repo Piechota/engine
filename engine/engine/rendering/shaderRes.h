@@ -1,32 +1,10 @@
 #pragma once
 
-enum class EShaderParameters : Byte
-{
-	ObjectToScreen,
-	ObjectToView,
-	ObjectToWorld,
-	LightPos,
-	Attenuation,
-	Color,
-	Cutoff,
-	AmbientColor,
-	LightDirVS,
-	UVScale,
-	Fade,
-	Soft,
-	Tiling,
-	BoxesNum,
-	Size,
-	Vertices,
-
-	SP_MAX
-};
-
 class CShaderRes
 {
 private:
 	ID3D12PipelineState* m_pso;
-	UINT16 m_paramOffsets[UINT(EShaderParameters::SP_MAX)];
+	std::map<uint32_t, UINT16> m_paramOffsets;
 	UINT16 m_bufferSize;
 
 private:
@@ -41,7 +19,7 @@ public:
 	void InitComputeShader( LPCWSTR pFileName, ID3D12RootSignature* pRootSignature, D3D_SHADER_MACRO const* pDefines = nullptr );
 	ID3D12PipelineState* GetPSO() { return m_pso; }
 	void Release() { m_pso->Release(); m_pso = nullptr; }
-	UINT16 GetOffset( EShaderParameters const param ) const { return m_paramOffsets[ UINT(param) ]; }
+	UINT16 GetOffset( uint32_t paramHash ) const;
 	UINT16 GetBufferSize() const { return m_bufferSize; }
 	bool IsValid() const
 	{

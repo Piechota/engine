@@ -29,10 +29,10 @@ void CComponentLightManager::FillRenderData() const
 		CConstBufferCtx const cbCtx = GRender.GetLightConstBufferCtx( lightRenderData.m_cbOffset, dirLightFlags );
 		if ( dirLightFlags & Byte( LF_DIRECT ) )
 		{
-			cbCtx.SetParam( &directionLightVS,		sizeof( directionLightVS ),		EShaderParameters::LightDirVS );
-			cbCtx.SetParam( &m_directLightColor,	sizeof( m_directLightColor ),	EShaderParameters::Color );
+			cbCtx.SetParam( &directionLightVS,		sizeof( directionLightVS ),		Hash( "LightDirVS" ) );
+			cbCtx.SetParam( &m_directLightColor,	sizeof( m_directLightColor ),	Hash( "Color" ) );
 		}
-		cbCtx.SetParam( &m_ambientLightColor,		sizeof( m_ambientLightColor ),	EShaderParameters::AmbientColor );
+		cbCtx.SetParam( &m_ambientLightColor,		sizeof( m_ambientLightColor ),	Hash( "AmbientColor" ) );
 
 		GRender.AddLightRenderData( lightRenderData );
 	}
@@ -71,10 +71,10 @@ void CComponentLightManager::FillRenderData() const
 		Vec2 const attenuation( 1.f / light.m_radius, light.m_fade );
 
 		CConstBufferCtx const cbCtx = GRender.GetLightConstBufferCtx( lightRenderData.m_cbOffset, light.m_lightShader );
-		cbCtx.SetParam( &positionVS,				sizeof( positionVS ),					EShaderParameters::LightPos );
-		cbCtx.SetParam( &attenuation,				sizeof( attenuation ),					EShaderParameters::Attenuation );
-		cbCtx.SetParam( &light.m_color,				sizeof( light.m_color ),				EShaderParameters::Color );
-		cbCtx.SetParam( areaVertices,				sizeof( areaVertices ),					EShaderParameters::Vertices );
+		cbCtx.SetParam( &positionVS,				sizeof( positionVS ),					Hash( "LightPos" ) );
+		cbCtx.SetParam( &attenuation,				sizeof( attenuation ),					Hash( "Attenuation" ) );
+		cbCtx.SetParam( &light.m_color,				sizeof( light.m_color ),				Hash( "Color" ) );
+		cbCtx.SetParam( areaVertices,				sizeof( areaVertices ),					Hash( "Vertices" ) );
 
 		GRender.AddLightRenderData( lightRenderData );
 	}

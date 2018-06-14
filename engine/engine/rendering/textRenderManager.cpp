@@ -235,8 +235,8 @@ void CTextRenderManager::FillRenderData()
 		renderData.m_indicesNum = renderInfo.m_indicesNum;
 
 		CConstBufferCtx const cbCtx = GRender.GetConstBufferCtx( renderData.m_cbOffset, EShaderType::ST_SDF_DRAW );
-		cbCtx.SetParam( &renderInfo.m_color,	sizeof( renderInfo.m_color ),	EShaderParameters::Color );
-		cbCtx.SetParam( &cutOff,				sizeof( cutOff ),				EShaderParameters::Cutoff );
+		cbCtx.SetParam( &renderInfo.m_color,	sizeof( renderInfo.m_color ),	Hash( "Color" ) );
+		cbCtx.SetParam( &cutOff,				sizeof( cutOff ),				Hash( "Cutoff" ) );
 
 		GRender.AddCommonRenderData( renderData, RL_OVERLAY );
 	}

@@ -248,12 +248,12 @@ void CEnvironmentParticleManager::FillRenderData()
 		Vec2 const uvScale( 1.f / 4.f, 1.f / 4.f );
 		float const softFactor = 0.5f;
 		CConstBufferCtx const cbCtx = GRender.GetConstBufferCtx( m_renderData.m_cbOffset, m_renderData.m_shaderID );
-		cbCtx.SetParam( &tObjectToWorld, 3 * sizeof( Vec4 ), EShaderParameters::ObjectToWorld );
-		cbCtx.SetParam( &uvScale, sizeof( uvScale ), EShaderParameters::UVScale );
-		cbCtx.SetParam( &m_fade, sizeof( m_fade ), EShaderParameters::Fade );
-		cbCtx.SetParam( &m_boxesNum, sizeof( m_boxesNum ), EShaderParameters::BoxesNum );
-		cbCtx.SetParam( &m_boxesSize, sizeof( m_boxesSize ), EShaderParameters::Size );
-		cbCtx.SetParam( &softFactor, sizeof( softFactor ), EShaderParameters::Soft );
+		cbCtx.SetParam( &tObjectToWorld,	3 * sizeof( Vec4 ),			Hash( "ObjectToWorld" ) );
+		cbCtx.SetParam( &uvScale,			sizeof( uvScale ),			Hash( "UVScale" ) );
+		cbCtx.SetParam( &m_fade,			sizeof( m_fade ),			Hash( "Fade" ) );
+		cbCtx.SetParam( &m_boxesNum,		sizeof( m_boxesNum ),		Hash( "BoxesNum" ) );
+		cbCtx.SetParam( &m_boxesSize,		sizeof( m_boxesSize ),		Hash( "Size" ) );
+		cbCtx.SetParam( &softFactor,		sizeof( softFactor ),		Hash( "Soft" ) );
 
 		GRender.AddCommonRenderData( m_renderData, ERenderLayer::RL_TRANSLUCENT );
 	}

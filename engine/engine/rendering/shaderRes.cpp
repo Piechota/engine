@@ -2,27 +2,6 @@
 #include "render.h"
 #include "shaderRes.h"
 
-LPCSTR ShaderParamsNames[] =
-{
-	"ObjectToScreen",
-	"ObjectToView",
-	"ObjectToWorld",
-	"LightPos",
-	"Attenuation",
-	"Color",
-	"Cutoff",
-	"AmbientColor",
-	"LightDirVS",
-	"UVScale",
-	"Fade",
-	"Soft",
-	"Tiling",
-	"BoxesNum",
-	"Size",
-	"Vertices",
-};
-CT_ASSERT( (ARRAYSIZE( ShaderParamsNames ) == ( UINT(EShaderParameters::SP_MAX) )) );
-
 inline void CShaderRes::LoadShader(LPCWSTR pFileName, D3D_SHADER_MACRO const* pDefines, LPCSTR pEmtryPoint, LPCSTR pTarget, ID3DBlob** ppCode) const
 {
 	ID3DBlob* error = nullptr;
@@ -32,7 +11,6 @@ inline void CShaderRes::LoadShader(LPCWSTR pFileName, D3D_SHADER_MACRO const* pD
 void CShaderRes::InitShader( LPCWSTR pFileName, D3D12_INPUT_ELEMENT_DESC const* vertexElements, UINT const vertexElementsNum, UINT const renderTargetNum, DXGI_FORMAT const* renderTargetFormats, ERenderTargetBlendStates const* renderTargetBlendStates, DXGI_FORMAT const depthFormat, EDepthStencilStates const depthStencilState, ERasterizerStates const rasterizationState, D3D_SHADER_MACRO const* pDefines )
 {
 	m_bufferSize = 0;
-	memset( m_paramOffsets, 0xFF, sizeof( m_paramOffsets ) );
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC descPSO = {};
 	descPSO.BlendState.AlphaToCoverageEnable = FALSE;
@@ -68,12 +46,15 @@ void CShaderRes::InitShader( LPCWSTR pFileName, D3D12_INPUT_ELEMENT_DESC const* 
 	{
 		m_bufferSize = UINT16( bufferDesc.Size );
 
-		for ( UINT i = 0; i < ARRAYSIZE( ShaderParamsNames ); ++i )
+		UINT const variablesNum = bufferDesc.Variables;
+		for ( UINT variableID = 0; variableID < variablesNum; ++variableID )
 		{
-			shaderVaribleRefl = shaderCBRefl->GetVariableByName( ShaderParamsNames[ i ] );
+			shaderVaribleRefl = shaderCBRefl->GetVariableByIndex( variableID );
 			if ( shaderVaribleRefl->GetDesc( &variableDesc ) == S_OK )
 			{
-				m_paramOffsets[ i ] = UINT16( variableDesc.StartOffset );
+				uint32_t const hash = HashRT( variableDesc.Name );
+				ASSERT( m_paramOffsets.find( hash ) == m_paramOffsets.end() );
+				m_paramOffsets[ hash ] = UINT16( variableDesc.StartOffset );
 			}
 		}
 	}
@@ -88,12 +69,14 @@ void CShaderRes::InitShader( LPCWSTR pFileName, D3D12_INPUT_ELEMENT_DESC const* 
 	{
 		m_bufferSize = max( m_bufferSize, UINT16( bufferDesc.Size ) );
 
-		for ( UINT i = 0; i < ARRAYSIZE( ShaderParamsNames ); ++i )
+		UINT const variablesNum = bufferDesc.Variables;
+		for ( UINT variableID = 0; variableID < variablesNum; ++variableID )
 		{
-			shaderVaribleRefl = shaderCBRefl->GetVariableByName( ShaderParamsNames[ i ] );
+			shaderVaribleRefl = shaderCBRefl->GetVariableByIndex( variableID );
 			if ( shaderVaribleRefl->GetDesc( &variableDesc ) == S_OK )
 			{
-				m_paramOffsets[ i ] = UINT16( variableDesc.StartOffset );
+				uint32_t const hash = HashRT( variableDesc.Name );
+				m_paramOffsets[ hash ] = UINT16( variableDesc.StartOffset );
 			}
 		}
 	}
@@ -108,7 +91,6 @@ void CShaderRes::InitShader( LPCWSTR pFileName, D3D12_INPUT_ELEMENT_DESC const* 
 void CShaderRes::InitComputeShader( LPCWSTR pFileName, ID3D12RootSignature* pRootSignature, D3D_SHADER_MACRO const* pDefines )
 {
 	m_bufferSize = 0;
-	memset( m_paramOffsets, 0xFF, sizeof( m_paramOffsets ) );
 
 	D3D12_COMPUTE_PIPELINE_STATE_DESC descPSO = {};
 	descPSO.pRootSignature = pRootSignature;
@@ -130,12 +112,15 @@ void CShaderRes::InitComputeShader( LPCWSTR pFileName, ID3D12RootSignature* pRoo
 	{
 		m_bufferSize = UINT16( bufferDesc.Size );
 
-		for ( UINT i = 0; i < ARRAYSIZE( ShaderParamsNames ); ++i )
+		UINT const variablesNum = bufferDesc.Variables;
+		for ( UINT variableID = 0; variableID < variablesNum; ++variableID )
 		{
-			shaderVaribleRefl = shaderCBRefl->GetVariableByName( ShaderParamsNames[ i ] );
+			shaderVaribleRefl = shaderCBRefl->GetVariableByIndex( variableID );
 			if ( shaderVaribleRefl->GetDesc( &variableDesc ) == S_OK )
 			{
-				m_paramOffsets[ i ] = UINT16( variableDesc.StartOffset );
+				uint32_t const hash = HashRT( variableDesc.Name );
+				ASSERT( m_paramOffsets.find( hash ) == m_paramOffsets.end() );
+				m_paramOffsets[ hash ] = UINT16( variableDesc.StartOffset );
 			}
 		}
 	}
@@ -144,4 +129,15 @@ void CShaderRes::InitComputeShader( LPCWSTR pFileName, ID3D12RootSignature* pRoo
 	CheckResult(GRender.GetDevice()->CreateComputePipelineState(&descPSO, IID_PPV_ARGS(&m_pso)));
 
 	csShader->Release();
+}
+
+UINT16 CShaderRes::GetOffset( uint32_t paramHash ) const 
+{ 
+	std::map<uint32_t, UINT16>::const_iterator value = m_paramOffsets.find( paramHash );
+	if ( value != m_paramOffsets.end() )
+	{
+		return value->second;
+	}
+
+	return 0xFFFF;
 }
