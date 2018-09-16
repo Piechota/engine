@@ -186,8 +186,8 @@ void CEnvironmentParticleManager::InitParticles(UINT const initParticleNum, UINT
 void CEnvironmentParticleManager::InitProjectionMatrix( Vec3 const forward, UINT const boxesNum )
 {
 	Vec3 up = abs( Vec3::Dot( Vec3::UP, forward ) ) == 1.f ? Vec3::FORWARD : Vec3::UP;
-	Vec3 right = Vec3::Cross( up, forward );
-	up = Vec3::Cross( forward, right );
+	Vec3 right = Vec3::Cross( forward, up );
+	up = Vec3::Cross( right, forward );
 
 	right.Normalize();
 	up.Normalize();

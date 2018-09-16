@@ -40,10 +40,10 @@ float Math::DistanceToTriangle( Vec3 const* triangle, Vec3 const& point )
 	Vec3 const p1 = point - triangle[1];
 	Vec3 const p2 = point - triangle[2];
 
-	Vec3 const nor = Vec3::Cross( v10, v02 );
-	Vec3 const v10CNor = Vec3::Cross( v10, nor );
-	Vec3 const v21CNor = Vec3::Cross( v21, nor );
-	Vec3 const v02CNor = Vec3::Cross( v02, nor );
+	Vec3 const nor = Vec3::Cross( v02, v10 );
+	Vec3 const v10CNor = Vec3::Cross( nor, v10 );
+	Vec3 const v21CNor = Vec3::Cross( nor, v21 );
+	Vec3 const v02CNor = Vec3::Cross( nor, v02 );
 
 	float const dot0 = Vec3::Dot( v10CNor, p0 );
 	float const dot1 = Vec3::Dot( v21CNor, p1 );

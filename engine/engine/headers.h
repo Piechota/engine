@@ -16,6 +16,7 @@
 #include <dxgi1_4.h>
 #include <d3dcompiler.h>
 
+#include <set>
 #include <map>
 #include <string>
 #include <comdef.h>
