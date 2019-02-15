@@ -339,7 +339,7 @@ struct Matrix4x4
 		return true;
 	}
 
-	bool Inverse( Matrix4x4& dst )
+	bool Inverse( Matrix4x4& dst ) const
 	{
 		float inv[16], det;
 		int i;

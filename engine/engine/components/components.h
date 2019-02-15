@@ -3,6 +3,7 @@
 enum EShaderType
 {
 	ST_OBJECT_DRAW,
+	ST_OBJECT_DRAW_NO_TEXTURES,
 	ST_OBJECT_DRAW_GEOMETRY_ONLY,
 	ST_OBJECT_DRAW_SIMPLE,
 	ST_OBJECT_DRAW_SIMPLE_TEXTURE,
@@ -51,6 +52,7 @@ enum EComponentType
 	CT_Light,
 	CT_Physics,
 	CT_Camera,
+	CT_PhysicsTest,
 
 	CT_Num,
 };
@@ -69,5 +71,6 @@ POD_TYPE( SComponentHandle )
 #include "componentLight.h"
 #include "componentPhysics.h"
 #include "componentCamera.h"
+#include "componentPhysicTest.h"
 
 #include "componentsManagers.h"

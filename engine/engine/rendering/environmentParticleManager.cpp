@@ -8,7 +8,7 @@ CEnvironmentParticleManager::CEnvironmentParticleManager()
 	, m_particlesNum( 0 )
 {}
 
-void CEnvironmentParticleManager::Init( UINT const initParticleNum, UINT const boxesNum, float const boxesSize )
+void CEnvironmentParticleManager::Init()
 {
 	ID3D12Device* const device = GRender.GetDevice();
 
@@ -45,11 +45,13 @@ void CEnvironmentParticleManager::Init( UINT const initParticleNum, UINT const b
 	m_particleCA->SetName( L"Environment Particle Command Allocator" );
 	m_particleCL->SetName( L"Environment Particle Command List" );
 
-	m_particleShaderInit.InitComputeShader( L"../shaders/environmentParticleInit.hlsl", m_particleRS );
+	m_particleShaderInit.InitComputeShader( L"../shaders/environmentParticleInit.hlsl", m_particleRS );	
+}
 
-	InitParticles( initParticleNum, boxesNum, boxesSize );
-
-	m_texture = GTextureResources[ L"../content/textures/snow.png" ].m_id;
+void CEnvironmentParticleManager::InitParticles(UINT const initParticleNum, UINT const boxesNum, float const boxesSize, UINT16 const texture)
+{
+	InitParticles(initParticleNum, boxesNum, boxesSize);
+	m_texture = texture;
 }
 
 void CEnvironmentParticleManager::AllocateBuffers()

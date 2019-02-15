@@ -541,9 +541,14 @@ void CRender::InitRootSignatures()
 
 void CRender::InitShaders()
 {
+	D3D_SHADER_MACRO texturesMacro[2];
+	memset(texturesMacro, 0, sizeof(texturesMacro));
+	texturesMacro[0].Name = "TEXTURES";
+
 	DXGI_FORMAT const objectDrawRenderTargets[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R10G10B10A2_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM };
 	ERenderTargetBlendStates const objectDrawRenderTargetsBlend[] = { ERTBS_Disabled, ERTBS_Disabled, ERTBS_Disabled };
-	m_shaders[ ST_OBJECT_DRAW ].InitShader( L"../shaders/objectDraw.hlsl", SSimpleObjectVertexFormat::desc, SSimpleObjectVertexFormat::descNum, 3, objectDrawRenderTargets, objectDrawRenderTargetsBlend, DXGI_FORMAT_D24_UNORM_S8_UINT, EDSS_DepthEnable );
+	m_shaders[ ST_OBJECT_DRAW ].InitShader( L"../shaders/objectDraw.hlsl", SSimpleObjectVertexFormat::desc, SSimpleObjectVertexFormat::descNum, 3, objectDrawRenderTargets, objectDrawRenderTargetsBlend, DXGI_FORMAT_D24_UNORM_S8_UINT, EDSS_DepthEnable, ERS_Default, texturesMacro);
+	m_shaders[ST_OBJECT_DRAW_NO_TEXTURES].InitShader(L"../shaders/objectDraw.hlsl", SSimpleObjectVertexFormat::desc, SSimpleObjectVertexFormat::descNum, 3, objectDrawRenderTargets, objectDrawRenderTargetsBlend, DXGI_FORMAT_D24_UNORM_S8_UINT, EDSS_DepthEnable );
 
 	D3D_SHADER_MACRO geometryOnlyMacro[2];
 	memset( geometryOnlyMacro, 0, sizeof( geometryOnlyMacro ) );
@@ -670,7 +675,7 @@ void CRender::Init()
 	CreateCommonTextures();
 
 	GTextRenderManager.Init();
-	GEnvironmentParticleManager.Init( 128, 2, 10.f );
+	GEnvironmentParticleManager.Init();
 }
 
 void CRender::DrawRenderData( ID3D12GraphicsCommandList* commandList, TArray< SCommonRenderData > const& renderData )

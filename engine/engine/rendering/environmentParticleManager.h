@@ -34,7 +34,8 @@ private:
 public:
 	CEnvironmentParticleManager();
 
-	void Init( UINT const initParticleNum, UINT const boxesNum, float const boxesSize );
+	void Init();
+	void InitParticles(UINT const initParticleNum, UINT const boxesNum, float const boxesSize, UINT16 const texture );
 	void FillRenderData();
 
 	Matrix4x4 GetViewToWorld() const { return m_viewToWorld; }

@@ -21,9 +21,6 @@ CStaticSound GSounds[SET_MAX];
 int GWidth = 800;
 int GHeight = 800;
 
-SComponentHandle testObjectTransformHandle;
-SComponentHandle ltcLightTest;
-
 //#define DUMMY_PROFILER
 
 #ifdef DUMMY_PROFILER
@@ -32,6 +29,338 @@ long constexpr GFrameProfNum = 2000;
 INT64 GFramesProf[ GFrameProfNum ];
 long GFrameProfID = 0;
 #endif
+
+static void Map0()
+{
+	GComponentLightManager.SetDirectLightColor(Vec3::ZERO);
+	GComponentLightManager.SetDirectLightDir(Vec3(0.f, 1.f, 1.f).GetNormalized());
+	GComponentLightManager.SetAmbientLightColor(Vec3(0.2f, 0.2f, 0.2f));
+
+	GEnvironmentParticleManager.InitParticles(128, 2, 10.f, GTextureResources[L"../content/textures/snow.png"].m_id );
+
+	//floor entity
+	{
+		UINT const floorEntityID = GEntityManager.CreateEntity();
+		CEntity* const pFloorEntity = GEntityManager.GetEntity(floorEntityID);
+
+		SComponentHandle const transformHandle = pFloorEntity->AddComponent(EComponentType::CT_Transform);
+		SComponentHandle const staticMeshHandle = pFloorEntity->AddComponent(EComponentType::CT_StaticMesh);
+
+		//transform
+		{
+			SComponentTransform& transformComponent = GComponentTransformManager.GetComponent(transformHandle);
+			transformComponent.m_position.Set(0.f, -2.f, 10.f);
+			transformComponent.m_scale.Set(10.f, 1.f, 10.f);
+			transformComponent.m_rotation = Quaternion::IDENTITY;
+		}
+
+		//static mesh
+		{
+			SComponentStaticMesh& staticMeshComponent = GComponentStaticMeshManager.GetComponent(staticMeshHandle);
+			staticMeshComponent.m_tiling.Set(10.f, 10.f);
+			staticMeshComponent.m_geometryID = GStaticGeometryResources["../content/models/box"].m_id;
+			staticMeshComponent.m_layer = RL_OPAQUE;
+			staticMeshComponent.m_shaderID = 0;
+			staticMeshComponent.m_textureID[0] = GTextureResources[L"../content/textures/pbr_test_b.dds"].m_id;
+			staticMeshComponent.m_textureID[1] = GTextureResources[L"../content/textures/pbr_test_n.dds"].m_id;
+			staticMeshComponent.m_textureID[2] = GTextureResources[L"../content/textures/pbr_test_r.dds"].m_id;
+			staticMeshComponent.m_textureID[3] = GTextureResources[L"../content/textures/pbr_test_m.dds"].m_id;
+			staticMeshComponent.m_textureID[4] = GTextureResources[L"../content/textures/common/black.png"].m_id;
+		}
+
+		GComponentStaticMeshManager.RegisterRenderComponents(transformHandle, staticMeshHandle);
+	}
+
+	//light 0
+	{
+		UINT const lightEntityID = GEntityManager.CreateEntity();
+		CEntity* const pLightEntity = GEntityManager.GetEntity(lightEntityID);
+
+		SComponentHandle const transformHandle = pLightEntity->AddComponent(EComponentType::CT_Transform);
+		SComponentHandle const staticMeshHandle = pLightEntity->AddComponent(EComponentType::CT_StaticMesh);
+		SComponentHandle const lightHandle = pLightEntity->AddComponent(EComponentType::CT_Light);
+
+		//transform
+		{
+			SComponentTransform& transformComponent = GComponentTransformManager.GetComponent(transformHandle);
+			transformComponent.m_position.Set(-1.5f, 0.5f, 10.f);
+			transformComponent.m_scale.Set(1.f, 1.f, 1.f);
+			transformComponent.m_rotation = Quaternion::FromAxisAngle(Vec3::RIGHT.data, -90.f * MathConsts::DegToRad);
+		}
+
+		//static mesh
+		{
+			SComponentStaticMesh& staticMeshComponent = GComponentStaticMeshManager.GetComponent(staticMeshHandle);
+			staticMeshComponent.m_color.Set(1.f, 1.f, 1.f);
+			staticMeshComponent.m_tiling.Set(1.f, 1.f);
+			staticMeshComponent.m_geometryID = GStaticGeometryResources["../content/models/plane"].m_id;
+			staticMeshComponent.m_layer = RL_UNLIT;
+			staticMeshComponent.m_shaderID = Byte(ST_OBJECT_DRAW_SIMPLE);
+			memset(staticMeshComponent.m_textureID, 0, sizeof(staticMeshComponent.m_textureID));
+		}
+
+		//light
+		{
+			SComponentLight& lightComponent = GComponentLightManager.GetComponent(lightHandle);
+			lightComponent.m_color.Set(2.f, 2.f, 2.f);
+			lightComponent.m_textureID = 0;
+			lightComponent.m_lightShader = Byte(ELightFlags::LF_LTC);
+		}
+
+		GComponentStaticMeshManager.RegisterRenderComponents(transformHandle, staticMeshHandle);
+		GComponentLightManager.RegisterRenderComponents(transformHandle, lightHandle);
+	}
+
+	//light 1 (texture)
+	{
+		UINT const lightEntityID = GEntityManager.CreateEntity();
+		CEntity* const pLightEntity = GEntityManager.GetEntity(lightEntityID);
+
+		SComponentHandle const transformHandle = pLightEntity->AddComponent(EComponentType::CT_Transform);
+		SComponentHandle const staticMeshHandle = pLightEntity->AddComponent(EComponentType::CT_StaticMesh);
+		SComponentHandle const lightHandle = pLightEntity->AddComponent(EComponentType::CT_Light);
+
+		//transform
+		{
+			SComponentTransform& transformComponent = GComponentTransformManager.GetComponent(transformHandle);
+			transformComponent.m_position.Set(5.5f, 0.5f, 10.f);
+			transformComponent.m_scale.Set(1.f, 1.f, 1.f);
+			transformComponent.m_rotation = Quaternion::FromAxisAngle(Vec3::RIGHT.data, -90.f * MathConsts::DegToRad);
+		}
+
+		//static mesh
+		{
+			SComponentStaticMesh& staticMeshComponent = GComponentStaticMeshManager.GetComponent(staticMeshHandle);
+			staticMeshComponent.m_color.Set(1.f, 1.f, 1.f);
+			staticMeshComponent.m_tiling.Set(1.f, 1.f);
+			staticMeshComponent.m_geometryID = GStaticGeometryResources["../content/models/plane"].m_id;
+			staticMeshComponent.m_layer = RL_UNLIT;
+			staticMeshComponent.m_shaderID = Byte(ST_OBJECT_DRAW_SIMPLE_TEXTURE);
+			memset(staticMeshComponent.m_textureID, 0, sizeof(staticMeshComponent.m_textureID));
+			staticMeshComponent.m_textureID[0] = GTextureResources[L"../content/textures/stained_glass.dds"].m_id;
+		}
+
+		//light
+		{
+			SComponentLight& lightComponent = GComponentLightManager.GetComponent(lightHandle);
+			lightComponent.m_color.Set(2.f, 2.f, 2.f);
+			lightComponent.m_textureID = GTextureResources[L"../content/textures/stained_glass.ltc.dds"].m_id;
+			lightComponent.m_lightShader = Byte(ELightFlags::LF_LTC_TEXTURE);
+		}
+
+		GComponentStaticMeshManager.RegisterRenderComponents(transformHandle, staticMeshHandle);
+		GComponentLightManager.RegisterRenderComponents(transformHandle, lightHandle);
+	}
+}
+
+
+static void Map1()
+{
+	GComponentLightManager.SetDirectLightColor(Vec3(0.7f, 0.7f, 0.7f));
+	GComponentLightManager.SetDirectLightDir(Vec3(0.f, 1.f, -1.f).GetNormalized());
+	GComponentLightManager.SetAmbientLightColor(Vec3(0.2f, 0.2f, 0.2f));
+
+	GEnvironmentParticleManager.InitParticles( 0, 2, 10.f, GTextureResources[L"../content/textures/snow.png"].m_id);
+
+	//sphereA
+	{
+		UINT const sphereEntityID = GEntityManager.CreateEntity();
+		CEntity* const pSphereEntity = GEntityManager.GetEntity(sphereEntityID);
+
+		SComponentHandle const transformHandle = pSphereEntity->AddComponent(EComponentType::CT_Transform);
+		SComponentHandle const staticMeshHandle = pSphereEntity->AddComponent(EComponentType::CT_StaticMesh);
+		SComponentHandle const physicHandle = pSphereEntity->AddComponent(EComponentType::CT_Physics);
+		SComponentHandle const physicTestHandle = pSphereEntity->AddComponent(EComponentType::CT_PhysicsTest);
+
+		//transform
+		{
+			SComponentTransform& transformComponent = GComponentTransformManager.GetComponent(transformHandle);
+			transformComponent.m_position.Set(-1.f, 0.f, 10.f);
+			transformComponent.m_scale.Set(1.f, 1.f, 1.f);
+			transformComponent.m_rotation = Quaternion::IDENTITY;
+		}
+
+		//static mesh
+		{
+			SComponentStaticMesh& staticMeshComponent = GComponentStaticMeshManager.GetComponent(staticMeshHandle);
+			staticMeshComponent.m_color.Set(.4f, 1.f, .4f);
+			staticMeshComponent.m_geometryID = GStaticGeometryResources["../content/models/sphere"].m_id;
+			staticMeshComponent.m_layer = RL_OPAQUE;
+			staticMeshComponent.m_shaderID = Byte(ST_OBJECT_DRAW_NO_TEXTURES);
+			memset(staticMeshComponent.m_textureID, 0, sizeof(staticMeshComponent.m_textureID));
+		}
+
+		//physic
+		{
+			SComponentPhysics &physicsComponent = GComponentPhysicsManager.GetComponent(physicHandle);
+			physicsComponent.m_radius = 1.f;
+			physicsComponent.m_colliderType = CT_Sphere;
+		}
+
+		//physicTest
+		{
+			SPhysicTestComponent &physicTestComponent = GComponentPhysicTestManager.GetComponent(physicTestHandle);
+			physicTestComponent.m_positionA.Set(-1.5f, 0.f, 9.5f);
+			physicTestComponent.m_positionB.Set(-0.5f, 0.f, 9.5f);
+		}
+
+		GComponentPhysicsManager.RegisterPhysicsComponents(transformHandle, physicHandle);
+		GComponentPhysicTestManager.RegisterPhysicTestComponents(transformHandle, physicHandle, staticMeshHandle, physicTestHandle);
+		GComponentStaticMeshManager.RegisterRenderComponents(transformHandle, staticMeshHandle);
+	}
+
+	//sphereB
+	{
+		UINT const sphereEntityID = GEntityManager.CreateEntity();
+		CEntity* const pSphereEntity = GEntityManager.GetEntity(sphereEntityID);
+
+		SComponentHandle const transformHandle = pSphereEntity->AddComponent(EComponentType::CT_Transform);
+		SComponentHandle const staticMeshHandle = pSphereEntity->AddComponent(EComponentType::CT_StaticMesh);
+		SComponentHandle const physicHandle = pSphereEntity->AddComponent(EComponentType::CT_Physics);
+		SComponentHandle const physicTestHandle = pSphereEntity->AddComponent(EComponentType::CT_PhysicsTest);
+
+		//transform
+		{
+			SComponentTransform& transformComponent = GComponentTransformManager.GetComponent(transformHandle);
+			transformComponent.m_position.Set(1.f, 0.f, 10.f);
+			transformComponent.m_scale.Set(1.f, 1.f, 1.f);
+			transformComponent.m_rotation = Quaternion::IDENTITY;
+		}
+
+		//static mesh
+		{
+			SComponentStaticMesh& staticMeshComponent = GComponentStaticMeshManager.GetComponent(staticMeshHandle);
+			staticMeshComponent.m_color.Set(.4f, 1.f, .4f);
+			staticMeshComponent.m_geometryID = GStaticGeometryResources["../content/models/sphere"].m_id;
+			staticMeshComponent.m_layer = RL_OPAQUE;
+			staticMeshComponent.m_shaderID = Byte(ST_OBJECT_DRAW_NO_TEXTURES);
+			memset(staticMeshComponent.m_textureID, 0, sizeof(staticMeshComponent.m_textureID));
+		}
+
+		//physic
+		{
+			SComponentPhysics &physicsComponent = GComponentPhysicsManager.GetComponent(physicHandle);
+			physicsComponent.m_radius = 1.f;
+			physicsComponent.m_colliderType = CT_Sphere;
+		}
+
+		//physicTest
+		{
+			SPhysicTestComponent &physicTestComponent = GComponentPhysicTestManager.GetComponent(physicTestHandle);
+			physicTestComponent.m_positionA.Set(1.5f, 0.f, 10.f);
+			physicTestComponent.m_positionB.Set(0.5f, 0.f, 10.f);
+		}
+
+		GComponentPhysicsManager.RegisterPhysicsComponents(transformHandle, physicHandle);
+		GComponentPhysicTestManager.RegisterPhysicTestComponents(transformHandle, physicHandle, staticMeshHandle, physicTestHandle);
+		GComponentStaticMeshManager.RegisterRenderComponents(transformHandle, staticMeshHandle);
+	}
+
+	//boxA
+	{
+		UINT const boxEntityID = GEntityManager.CreateEntity();
+		CEntity* const pBoxEntity = GEntityManager.GetEntity(boxEntityID);
+
+		SComponentHandle const transformHandle = pBoxEntity->AddComponent(EComponentType::CT_Transform);
+		SComponentHandle const staticMeshHandle = pBoxEntity->AddComponent(EComponentType::CT_StaticMesh);
+		SComponentHandle const physicHandle = pBoxEntity->AddComponent(EComponentType::CT_Physics);
+		SComponentHandle const physicTestHandle = pBoxEntity->AddComponent(EComponentType::CT_PhysicsTest);
+
+		//transform
+		{
+			SComponentTransform& transformComponent = GComponentTransformManager.GetComponent(transformHandle);
+			transformComponent.m_position.Set(0.f, 1.f, 10.f);
+			transformComponent.m_scale.Set(1.f, 1.f, 1.f);
+			
+			Vec3 rotationAxis(-1.f, 1.f, 0.f);
+			rotationAxis.Normalize();
+
+			transformComponent.m_rotation = Quaternion::FromAxisAngle(rotationAxis.data, 45.f);
+			transformComponent.m_rotation = Quaternion::IDENTITY;
+		}
+
+		//static mesh
+		{
+			SComponentStaticMesh& staticMeshComponent = GComponentStaticMeshManager.GetComponent(staticMeshHandle);
+			staticMeshComponent.m_color.Set(.4f, 1.f, .4f);
+			staticMeshComponent.m_geometryID = GStaticGeometryResources["../content/models/box"].m_id;
+			staticMeshComponent.m_layer = RL_OPAQUE;
+			staticMeshComponent.m_shaderID = Byte(ST_OBJECT_DRAW_NO_TEXTURES);
+			memset(staticMeshComponent.m_textureID, 0, sizeof(staticMeshComponent.m_textureID));
+		}
+
+		//physic
+		{
+			SComponentPhysics &physicsComponent = GComponentPhysicsManager.GetComponent(physicHandle);
+			physicsComponent.m_boxSides = Vec3::ONE;
+			physicsComponent.m_colliderType = CT_Box;
+		}
+
+		//physicTest
+		{
+			SPhysicTestComponent &physicTestComponent = GComponentPhysicTestManager.GetComponent(physicTestHandle);
+			physicTestComponent.m_positionA.Set(0.f, 5.f, 10.f);
+			physicTestComponent.m_positionB.Set(0.f, 0.f, 10.f);
+		}
+
+		GComponentPhysicsManager.RegisterPhysicsComponents(transformHandle, physicHandle);
+		GComponentPhysicTestManager.RegisterPhysicTestComponents(transformHandle, physicHandle, staticMeshHandle, physicTestHandle);
+		GComponentStaticMeshManager.RegisterRenderComponents(transformHandle, staticMeshHandle);
+	}
+
+	//boxB
+	{
+		UINT const boxEntityID = GEntityManager.CreateEntity();
+		CEntity* const pBoxEntity = GEntityManager.GetEntity(boxEntityID);
+
+		SComponentHandle const transformHandle = pBoxEntity->AddComponent(EComponentType::CT_Transform);
+		SComponentHandle const staticMeshHandle = pBoxEntity->AddComponent(EComponentType::CT_StaticMesh);
+		SComponentHandle const physicHandle = pBoxEntity->AddComponent(EComponentType::CT_Physics);
+		SComponentHandle const physicTestHandle = pBoxEntity->AddComponent(EComponentType::CT_PhysicsTest);
+
+		//transform
+		{
+			SComponentTransform& transformComponent = GComponentTransformManager.GetComponent(transformHandle);
+			transformComponent.m_position.Set(2.5f, 1.f, 10.f);
+			transformComponent.m_scale.Set(1.f, 1.f, 1.f);
+
+			Vec3 rotationAxis( -1.f, 1.f, 0.f );
+			rotationAxis.Normalize();
+
+			transformComponent.m_rotation = Quaternion::FromAxisAngle(rotationAxis.data, 45.f );
+			//transformComponent.m_rotation = Quaternion::IDENTITY;
+		}
+
+		//static mesh
+		{
+			SComponentStaticMesh& staticMeshComponent = GComponentStaticMeshManager.GetComponent(staticMeshHandle);
+			staticMeshComponent.m_color.Set(.4f, 1.f, .4f);
+			staticMeshComponent.m_geometryID = GStaticGeometryResources["../content/models/box"].m_id;
+			staticMeshComponent.m_layer = RL_OPAQUE;
+			staticMeshComponent.m_shaderID = Byte(ST_OBJECT_DRAW_NO_TEXTURES);
+			memset(staticMeshComponent.m_textureID, 0, sizeof(staticMeshComponent.m_textureID));
+		}
+
+		//physic
+		{
+			SComponentPhysics &physicsComponent = GComponentPhysicsManager.GetComponent(physicHandle);
+			physicsComponent.m_boxSides = Vec3::ONE;
+			physicsComponent.m_colliderType = CT_Box;
+		}
+
+		//physicTest
+		{
+			SPhysicTestComponent &physicTestComponent = GComponentPhysicTestManager.GetComponent(physicTestHandle);
+			physicTestComponent.m_positionA.Set(2.1f, 5.f, 10.f);
+			physicTestComponent.m_positionB.Set(2.1f, 5.f, 10.f);
+		}
+
+		GComponentPhysicsManager.RegisterPhysicsComponents(transformHandle, physicHandle);
+		GComponentPhysicTestManager.RegisterPhysicTestComponents(transformHandle, physicHandle, staticMeshHandle, physicTestHandle);
+		GComponentStaticMeshManager.RegisterRenderComponents(transformHandle, staticMeshHandle);
+	}
+}
+
 
 void InitGame()
 {
@@ -49,119 +378,8 @@ void InitGame()
 		cameraComponent.m_rotation = Quaternion::IDENTITY;
 	}
 
-	//floor entity
-	{
-		UINT const floorEntityID = GEntityManager.CreateEntity();
-		CEntity* const pFloorEntity = GEntityManager.GetEntity( floorEntityID );
-
-		SComponentHandle const transformHandle = pFloorEntity->AddComponent( EComponentType::CT_Transform );
-		SComponentHandle const staticMeshHandle = pFloorEntity->AddComponent( EComponentType::CT_StaticMesh );
-
-		//transform
-		{
-			SComponentTransform& transformComponent = GComponentTransformManager.GetComponent( transformHandle );
-			transformComponent.m_position.Set( 0.f, -2.f, 10.f );
-			transformComponent.m_scale.Set( 10.f, 1.f, 10.f );
-			transformComponent.m_rotation = Quaternion::IDENTITY;
-		}
-
-		//static mesh
-		{
-			SComponentStaticMesh& staticMeshComponent = GComponentStaticMeshManager.GetComponent( staticMeshHandle );
-			staticMeshComponent.m_tiling.Set( 10.f, 10.f );
-			staticMeshComponent.m_geometryID = GStaticGeometryResources["../content/models/box"].m_id;
-			staticMeshComponent.m_layer = RL_OPAQUE;
-			staticMeshComponent.m_shaderID = 0;
-			staticMeshComponent.m_textureID[ 0 ] = GTextureResources[ L"../content/textures/pbr_test_b.dds" ].m_id;
-			staticMeshComponent.m_textureID[ 1 ] = GTextureResources[ L"../content/textures/pbr_test_n.dds" ].m_id;
-			staticMeshComponent.m_textureID[ 2 ] = GTextureResources[ L"../content/textures/pbr_test_r.dds" ].m_id;
-			staticMeshComponent.m_textureID[ 3 ] = GTextureResources[ L"../content/textures/pbr_test_m.dds" ].m_id;
-			staticMeshComponent.m_textureID[ 4 ] = GTextureResources[ L"../content/textures/common/black.png" ].m_id;
-		}
-
-		GComponentStaticMeshManager.RegisterRenderComponents( transformHandle, staticMeshHandle );
-	}
-
-	//light 0
-	{
-		UINT const lightEntityID = GEntityManager.CreateEntity();
-		CEntity* const pLightEntity = GEntityManager.GetEntity( lightEntityID );
-
-		SComponentHandle const transformHandle = pLightEntity->AddComponent( EComponentType::CT_Transform );
-		SComponentHandle const staticMeshHandle = pLightEntity->AddComponent( EComponentType::CT_StaticMesh );
-		SComponentHandle const lightHandle = pLightEntity->AddComponent( EComponentType::CT_Light );
-
-		//transform
-		{
-			SComponentTransform& transformComponent = GComponentTransformManager.GetComponent( transformHandle );
-			transformComponent.m_position.Set( -1.5f, 0.5f, 10.f );
-			transformComponent.m_scale.Set( 1.f, 1.f, 1.f );
-			transformComponent.m_rotation = Quaternion::FromAxisAngle( Vec3::RIGHT.data, -90.f * MathConsts::DegToRad );
-		}
-
-		//static mesh
-		{
-			SComponentStaticMesh& staticMeshComponent = GComponentStaticMeshManager.GetComponent( staticMeshHandle );
-			staticMeshComponent.m_color.Set( 1.f, 1.f, 1.f );
-			staticMeshComponent.m_tiling.Set( 1.f, 1.f );
-			staticMeshComponent.m_geometryID = GStaticGeometryResources["../content/models/plane"].m_id;
-			staticMeshComponent.m_layer = RL_UNLIT;
-			staticMeshComponent.m_shaderID = Byte(ST_OBJECT_DRAW_SIMPLE);
-			memset( staticMeshComponent.m_textureID, 0, sizeof( staticMeshComponent.m_textureID ) );
-		}
-
-		//light
-		{
-			SComponentLight& lightComponent = GComponentLightManager.GetComponent( lightHandle );
-			lightComponent.m_color.Set( 2.f, 2.f, 2.f );
-			lightComponent.m_textureID = 0;
-			lightComponent.m_lightShader = Byte( ELightFlags::LF_LTC );
-		}
-
-		GComponentStaticMeshManager.RegisterRenderComponents( transformHandle, staticMeshHandle );
-		GComponentLightManager.RegisterRenderComponents( transformHandle, lightHandle );
-	}
-
-	//light 1 (texture)
-	{
-		UINT const lightEntityID = GEntityManager.CreateEntity();
-		CEntity* const pLightEntity = GEntityManager.GetEntity( lightEntityID );
-
-		SComponentHandle const transformHandle = pLightEntity->AddComponent( EComponentType::CT_Transform );
-		SComponentHandle const staticMeshHandle = pLightEntity->AddComponent( EComponentType::CT_StaticMesh );
-		SComponentHandle const lightHandle = pLightEntity->AddComponent( EComponentType::CT_Light );
-
-		//transform
-		{
-			SComponentTransform& transformComponent = GComponentTransformManager.GetComponent( transformHandle );
-			transformComponent.m_position.Set(  5.5f, 0.5f, 10.f );
-			transformComponent.m_scale.Set( 1.f, 1.f, 1.f );
-			transformComponent.m_rotation = Quaternion::FromAxisAngle( Vec3::RIGHT.data, -90.f * MathConsts::DegToRad );
-		}
-
-		//static mesh
-		{
-			SComponentStaticMesh& staticMeshComponent = GComponentStaticMeshManager.GetComponent( staticMeshHandle );
-			staticMeshComponent.m_color.Set( 1.f, 1.f, 1.f );
-			staticMeshComponent.m_tiling.Set( 1.f, 1.f );
-			staticMeshComponent.m_geometryID = GStaticGeometryResources["../content/models/plane"].m_id;
-			staticMeshComponent.m_layer = RL_UNLIT;
-			staticMeshComponent.m_shaderID = Byte(ST_OBJECT_DRAW_SIMPLE_TEXTURE);
-			memset( staticMeshComponent.m_textureID, 0, sizeof( staticMeshComponent.m_textureID ) );
-			staticMeshComponent.m_textureID[ 0 ] = GTextureResources[ L"../content/textures/stained_glass.dds" ].m_id;
-		}
-
-		//light
-		{
-			SComponentLight& lightComponent = GComponentLightManager.GetComponent( lightHandle );
-			lightComponent.m_color.Set( 2.f, 2.f, 2.f );
-			lightComponent.m_textureID = GTextureResources[ L"../content/textures/stained_glass.ltc.dds" ].m_id;
-			lightComponent.m_lightShader = Byte( ELightFlags::LF_LTC_TEXTURE );
-		}
-
-		GComponentStaticMeshManager.RegisterRenderComponents( transformHandle, staticMeshHandle );
-		GComponentLightManager.RegisterRenderComponents( transformHandle, lightHandle );
-	}
+	//Map0();
+	Map1();
 }
 
 void DrawDebugInfo()
@@ -218,10 +436,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
 	GRender.SetHWND(hwnd);
 
 	GRender.Init();
-
-	GComponentLightManager.SetDirectLightColor( Vec3::ZERO );
-	GComponentLightManager.SetDirectLightDir( Vec3( 0.f, 1.f, 1.f ).GetNormalized() );
-	GComponentLightManager.SetAmbientLightColor( Vec3( 0.2f, 0.2f, 0.2f ) );
 
 	GInputManager.SetHWND(hwnd);
 
@@ -281,6 +495,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
 		}
 
 		GComponentCameraManager.MainCameraTick();
+		GComponentPhysicsManager.PhysicTick();
+		GComponentPhysicTestManager.PhysicTestUpdate();
 
 		if ( GInputManager.KeyDownLastFrame( K_F5 ) )
 		{

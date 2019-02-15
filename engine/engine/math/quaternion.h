@@ -77,6 +77,17 @@ struct Quaternion
 		*this = rQ;
 	}
 
+	Quaternion operator/(float const f) const
+	{
+		Quaternion rQ;
+		rQ.w = w / f;
+		rQ.x = x / f;
+		rQ.y = y / f;
+		rQ.z = z / f;
+
+		return rQ;
+	}
+
 	Matrix4x4 ToMatrix4x4() const
 	{
 		float const x2 = x * x;
@@ -100,11 +111,22 @@ struct Quaternion
 		);
 	}
 
+	static Quaternion Normalize(Quaternion const &q )
+	{
+		float const m = q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w;
+		if (m > 0.f)
+		{
+			return q / sqrtf(m);
+		}
+
+		return q;
+	}
+
 	static Quaternion FromAxisAngle(float const* axis, float const angle)
 	{
 		float const halfAngle = 0.5f * angle;
 		float const sinA = sinf(halfAngle);
-		return Quaternion(axis[0] * sinA, axis[1] * sinA, axis[2] * sinA, cosf(halfAngle));
+		return Normalize( Quaternion(axis[0] * sinA, axis[1] * sinA, axis[2] * sinA, cosf(halfAngle)) );
 	}
 
 	static Quaternion const IDENTITY;

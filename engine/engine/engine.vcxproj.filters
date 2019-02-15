@@ -87,6 +87,9 @@
     <ClCompile Include="physics\collisionUtilities.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="components\componentPhysicTest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="headers.h">
@@ -969,6 +972,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="utility\fbxsdk\scene\fbxvideo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="physics\physicsObjects.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="components\componentPhysicTest.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

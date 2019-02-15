@@ -20,6 +20,12 @@ void CEntity::Destroy()
 			case EComponentType::CT_Camera:
 				GComponentCameraManager.RemoveComponent( handle );
 				break;
+			case EComponentType::CT_Physics:
+				GComponentPhysicsManager.RemoveComponent(handle);
+				break;
+			case EComponentType::CT_PhysicsTest:
+				GComponentPhysicTestManager.RemoveComponent(handle);
+				break;
 			default:
 				ASSERT_STR( false, "Missing component type" );
 				break;
@@ -39,6 +45,10 @@ SComponentHandle CEntity::AddComponent( EComponentType const type )
 			return GComponentLightManager.AddComponent();
 		case EComponentType::CT_Camera:
 			return GComponentCameraManager.AddComponent();
+		case EComponentType::CT_Physics:
+			return GComponentPhysicsManager.AddComponent();
+		case EComponentType::CT_PhysicsTest:
+			return GComponentPhysicTestManager.AddComponent();
 		default:
 			ASSERT_STR( false, "Missing component type" );
 			return SComponentHandle{ 0, 0 };

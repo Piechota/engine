@@ -198,6 +198,7 @@
     <ClCompile Include="components\componentCamera.cpp" />
     <ClCompile Include="components\componentLight.cpp" />
     <ClCompile Include="components\componentPhysics.cpp" />
+    <ClCompile Include="components\componentPhysicTest.cpp" />
     <ClCompile Include="components\componentsManagers.cpp" />
     <ClCompile Include="components\componentStaticMesh.cpp" />
     <ClCompile Include="math\mathUtilities.cpp" />
@@ -226,12 +227,14 @@
     <ClInclude Include="components\componentContainer.h" />
     <ClInclude Include="components\componentLight.h" />
     <ClInclude Include="components\componentPhysics.h" />
+    <ClInclude Include="components\componentPhysicTest.h" />
     <ClInclude Include="components\components.h" />
     <ClInclude Include="components\componentsManagers.h" />
     <ClInclude Include="components\componentStaticMesh.h" />
     <ClInclude Include="components\componentTransform.h" />
     <ClInclude Include="core.h" />
     <ClInclude Include="entity.h" />
+    <ClInclude Include="physics\physicsObjects.h" />
     <ClInclude Include="rendering\commandQueue.h" />
     <ClInclude Include="rendering\constBuffers.h" />
     <ClInclude Include="rendering\descriptorHeap.h" />

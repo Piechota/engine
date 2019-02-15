@@ -6,4 +6,6 @@ CComponentLightManager			GComponentLightManager;
 CComponentPhysicsManager		GComponentPhysicsManager;
 CComponentCameraManager			GComponentCameraManager;
 
+CComponentPhysicTestManager		GComponentPhysicTestManager;
+
 
