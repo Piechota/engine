@@ -3,14 +3,23 @@
 Matrix4x4 Matrix4x4::GetTranslateRotationSize( Vec3 const& translate, Quaternion const& rotation, Vec3 const& scale )
 {
 	Matrix4x4 const rotationM = rotation.ToMatrix4x4();
-	Matrix4x4 const translateScale
+
+	Matrix4x4 translateMat
 	(
-		scale.x,		0.f,			0.f,			0.f,
-		0.f,			scale.y,		0.f,			0.f,
-		0.f,			0.f,			scale.z,		0.f,
-		translate.x,	translate.y,	translate.z,	1.f
+		1.f, 0.f, 0.f, 0.f,
+		0.f, 1.f, 0.f, 0.f,
+		0.f, 0.f, 1.f, 0.f,
+		translate.x, translate.y, translate.z, 1.f
 	);
-	return Math::Mul( rotationM, translateScale );
+
+	Matrix4x4 scaleMat
+	(
+		scale.x, 0.f, 0.f, 0.f,
+		0.f, scale.y, 0.f, 0.f,
+		0.f, 0.f, scale.z, 0.f,
+		0.f, 0.f, 0.f, 1.f
+	);
+	return Math::Mul(scaleMat, Math::Mul(rotationM, translateMat ));
 }
 
 Matrix3x3 Math::Mul(Matrix3x3 const& a, Matrix3x3 const& b)

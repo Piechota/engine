@@ -30,7 +30,7 @@ INT64 GFramesProf[ GFrameProfNum ];
 long GFrameProfID = 0;
 #endif
 
-static void Map0()
+static void MainTestMap()
 {
 	ComponentLightManager::SetDirectLightColor(Vec3(0.6f, 0.6f, 0.6f));
 	ComponentLightManager::SetDirectLightDir(Vec3(0.f, 1.f, 1.f).GetNormalized());
@@ -89,6 +89,44 @@ static void Map0()
 		ComponentStaticMeshManager::RegisterRenderComponents(transformHandle, staticMeshHandle);
 	}
 
+	//transformTest entity
+	{
+		UINT const entityID = GEntityManager.CreateEntity();
+		CEntity* const pEntity = GEntityManager.GetEntity(entityID);
+
+		SComponentHandle const transformHandle = pEntity->AddComponent(EComponentType::CT_Transform);
+		SComponentHandle const staticMeshHandle = pEntity->AddComponent(EComponentType::CT_StaticMesh);
+
+		//Quaternion rotation = Quaternion::IDENTITY;
+		Quaternion rotation = Quaternion::FromAxisAngle(Vec3(1.f, 1.f, 1.f).GetNormalized(), 45.f * MathConsts::DegToRad);
+		Vec3 position(0.f, 0.f, 0.f);
+		Vec3 scale(.25f, .5f, .5f);
+
+		//transform
+		{
+			SComponentTransform& transformComponent = ComponentTransformManager::GetComponent(transformHandle);
+			transformComponent.m_position = position;
+			transformComponent.m_scale = scale;
+			transformComponent.m_rotation = rotation;
+		}
+
+		//static mesh
+		{
+			SComponentStaticMesh& staticMeshComponent = ComponentStaticMeshManager::GetComponent(staticMeshHandle);
+			staticMeshComponent.m_tiling.Set(1.f, 1.f);
+			staticMeshComponent.m_geometryID = GStaticGeometryResources["../content/models/box"].m_id;
+			staticMeshComponent.m_layer = RL_OPAQUE;
+			staticMeshComponent.m_shaderID = 0;
+			staticMeshComponent.m_textureID[0] = GTextureResources[L"../content/textures/pbr_test_b.dds"].m_id;
+			staticMeshComponent.m_textureID[1] = GTextureResources[L"../content/textures/pbr_test_n.dds"].m_id;
+			staticMeshComponent.m_textureID[2] = GTextureResources[L"../content/textures/pbr_test_r.dds"].m_id;
+			staticMeshComponent.m_textureID[3] = GTextureResources[L"../content/textures/pbr_test_m.dds"].m_id;
+			staticMeshComponent.m_textureID[4] = GTextureResources[L"../content/textures/common/black.png"].m_id;
+		}
+
+		ComponentStaticMeshManager::RegisterRenderComponents(transformHandle, staticMeshHandle);
+	}
+
 	//rigid0 entity
 	{
 		UINT const entityID = GEntityManager.CreateEntity();
@@ -100,14 +138,14 @@ static void Map0()
 
 		Quaternion rotation = Quaternion::FromAxisAngle(Vec3(1.f,1.f,1.f).GetNormalized(), 45.f * MathConsts::DegToRad);
 		Vec3 position(0.f, 4.f, 5.f);
-		Vec3 scale(.5f, .5f, .5f);
+		Vec3 scale(.25f, .5f, .5f);
 
 		//transform
 		{
 			SComponentTransform& transformComponent = ComponentTransformManager::GetComponent(transformHandle);
 			transformComponent.m_position = position;
 			transformComponent.m_scale = scale;
-			transformComponent.m_rotation = Quaternion::IDENTITY;
+			transformComponent.m_rotation = rotation;
 		}
 
 		//static mesh
@@ -159,7 +197,7 @@ static void Map0()
 			SComponentTransform& transformComponent = ComponentTransformManager::GetComponent(transformHandle);
 			transformComponent.m_position = position;
 			transformComponent.m_scale = scale;
-			transformComponent.m_rotation = Quaternion::IDENTITY;
+			transformComponent.m_rotation = rotation;
 		}
 
 		//static mesh
@@ -275,6 +313,91 @@ static void Map0()
 	}
 }
 
+static void TransformTestMap()
+{
+	ComponentLightManager::SetDirectLightColor(Vec3(0.6f, 0.6f, 0.6f));
+	ComponentLightManager::SetDirectLightDir(Vec3(0.f, 1.f, 1.f).GetNormalized());
+	ComponentLightManager::SetAmbientLightColor(Vec3(0.7f, 0.7f, 0.7f));
+
+	GEnvironmentParticleManager.InitParticles(128, 2, 10.f, GTextureResources[L"../content/textures/snow.png"].m_id);
+
+	//transformTest0 entity
+	{
+		UINT const entityID = GEntityManager.CreateEntity();
+		CEntity* const pEntity = GEntityManager.GetEntity(entityID);
+
+		SComponentHandle const transformHandle = pEntity->AddComponent(EComponentType::CT_Transform);
+		SComponentHandle const staticMeshHandle = pEntity->AddComponent(EComponentType::CT_StaticMesh);
+
+		//Quaternion rotation = Quaternion::IDENTITY;
+		Quaternion rotation = Quaternion::FromAxisAngle(Vec3(1.f, 1.f, 1.f).GetNormalized(), 45.f * MathConsts::DegToRad);
+		Vec3 position(0.f, 0.f, 4.f);
+		Vec3 scale(.5f, .5f, .25f);
+
+		//transform
+		{
+			SComponentTransform& transformComponent = ComponentTransformManager::GetComponent(transformHandle);
+			transformComponent.m_position = position;
+			transformComponent.m_scale = scale;
+			transformComponent.m_rotation = rotation;
+		}
+
+		//static mesh
+		{
+			SComponentStaticMesh& staticMeshComponent = ComponentStaticMeshManager::GetComponent(staticMeshHandle);
+			staticMeshComponent.m_tiling.Set(1.f, 1.f);
+			staticMeshComponent.m_geometryID = GStaticGeometryResources["../content/models/box"].m_id;
+			staticMeshComponent.m_layer = RL_OPAQUE;
+			staticMeshComponent.m_shaderID = 0;
+			staticMeshComponent.m_textureID[0] = GTextureResources[L"../content/textures/pbr_test_b.dds"].m_id;
+			staticMeshComponent.m_textureID[1] = GTextureResources[L"../content/textures/pbr_test_n.dds"].m_id;
+			staticMeshComponent.m_textureID[2] = GTextureResources[L"../content/textures/pbr_test_r.dds"].m_id;
+			staticMeshComponent.m_textureID[3] = GTextureResources[L"../content/textures/pbr_test_m.dds"].m_id;
+			staticMeshComponent.m_textureID[4] = GTextureResources[L"../content/textures/common/black.png"].m_id;
+		}
+
+		ComponentStaticMeshManager::RegisterRenderComponents(transformHandle, staticMeshHandle);
+	}
+
+	//transformTest1 entity
+	{
+		UINT const entityID = GEntityManager.CreateEntity();
+		CEntity* const pEntity = GEntityManager.GetEntity(entityID);
+
+		SComponentHandle const transformHandle = pEntity->AddComponent(EComponentType::CT_Transform);
+		SComponentHandle const staticMeshHandle = pEntity->AddComponent(EComponentType::CT_StaticMesh);
+
+		Quaternion rotation = Quaternion::IDENTITY;
+		//Quaternion rotation = Quaternion::FromAxisAngle(Vec3(1.f, 1.f, 1.f).GetNormalized(), 45.f * MathConsts::DegToRad);
+		Vec3 position(0.f, 0.f, 4.f);
+		Vec3 scale(.5f, .5f, .5f);
+
+		//transform
+		{
+			SComponentTransform& transformComponent = ComponentTransformManager::GetComponent(transformHandle);
+			transformComponent.m_position = position;
+			transformComponent.m_scale = scale;
+			transformComponent.m_rotation = rotation;
+		}
+
+		//static mesh
+		{
+			SComponentStaticMesh& staticMeshComponent = ComponentStaticMeshManager::GetComponent(staticMeshHandle);
+			staticMeshComponent.m_tiling.Set(1.f, 1.f);
+			staticMeshComponent.m_geometryID = GStaticGeometryResources["../content/models/box"].m_id;
+			staticMeshComponent.m_layer = RL_OPAQUE;
+			staticMeshComponent.m_shaderID = 0;
+			staticMeshComponent.m_textureID[0] = GTextureResources[L"../content/textures/pbr_test_b.dds"].m_id;
+			staticMeshComponent.m_textureID[1] = GTextureResources[L"../content/textures/pbr_test_n.dds"].m_id;
+			staticMeshComponent.m_textureID[2] = GTextureResources[L"../content/textures/pbr_test_r.dds"].m_id;
+			staticMeshComponent.m_textureID[3] = GTextureResources[L"../content/textures/pbr_test_m.dds"].m_id;
+			staticMeshComponent.m_textureID[4] = GTextureResources[L"../content/textures/common/black.png"].m_id;
+		}
+
+		ComponentStaticMeshManager::RegisterRenderComponents(transformHandle, staticMeshHandle);
+	}
+}
+
 extern AddComponentFunc AddComponentFuncPtr[CT_Num];
 extern RemoveComponentFunc RemoveComponentFuncPtr[CT_Num];
 
@@ -309,8 +432,8 @@ void InitGame()
 		cameraComponent.m_rotation = Quaternion::IDENTITY;
 	}
 
-	Map0();
-	//Map1();
+	MainTestMap();
+	//TransformTestMap();
 }
 
 void DrawDebugInfo()
