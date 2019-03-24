@@ -239,8 +239,8 @@ void CEnvironmentParticleManager::FillRenderData()
 		GRender.AddTextureID( m_texture );
 		//Vec2 const uvScale( 1.f, 1.f );
 
-		Vec3 const cameraPosition = GComponentCameraManager.GetMainCameraPosition();
-		Vec3 const cameraForward = GComponentCameraManager.GetMainCameraForward();
+		Vec3 const cameraPosition = ComponentCameraManager::GetMainCameraPosition();
+		Vec3 const cameraForward = ComponentCameraManager::GetMainCameraForward();
 		Vec3 const startPosition = Math::Snap( cameraPosition + cameraForward * m_positionOffset, m_boxesSize ) - m_boxCenterOffset;
 		Vec3 const boxesMin = startPosition + m_boxCenterOffset - m_size;
 		Matrix4x4 tObjectToWorld = m_boxMatrix;

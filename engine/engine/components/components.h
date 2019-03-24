@@ -50,9 +50,8 @@ enum EComponentType
 	CT_Transform,
 	CT_StaticMesh,
 	CT_Light,
-	CT_Physics,
 	CT_Camera,
-	CT_PhysicsTest,
+	CT_Rigidbody,
 
 	CT_Num,
 };
@@ -62,15 +61,15 @@ struct SComponentHandle
 	UINT32 m_index : 24;
 	UINT32 m_type : 8;
 };
-POD_TYPE( SComponentHandle )
+POD_TYPE(SComponentHandle)
 
-#include "componentContainer.h"
+typedef SComponentHandle(*AddComponentFunc)();
+typedef void(*RemoveComponentFunc)(SComponentHandle const handle);
+
+#include "componentsHelper.h"
 
 #include "componentTransform.h"
 #include "componentStaticMesh.h"
 #include "componentLight.h"
-#include "componentPhysics.h"
 #include "componentCamera.h"
-#include "componentPhysicTest.h"
-
-#include "componentsManagers.h"
+#include "componentRigidbody.h"

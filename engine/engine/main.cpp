@@ -32,9 +32,9 @@ long GFrameProfID = 0;
 
 static void Map0()
 {
-	GComponentLightManager.SetDirectLightColor(Vec3::ZERO);
-	GComponentLightManager.SetDirectLightDir(Vec3(0.f, 1.f, 1.f).GetNormalized());
-	GComponentLightManager.SetAmbientLightColor(Vec3(0.2f, 0.2f, 0.2f));
+	ComponentLightManager::SetDirectLightColor(Vec3(0.6f, 0.6f, 0.6f));
+	ComponentLightManager::SetDirectLightDir(Vec3(0.f, 1.f, 1.f).GetNormalized());
+	ComponentLightManager::SetAmbientLightColor(Vec3(0.7f, 0.7f, 0.7f));
 
 	GEnvironmentParticleManager.InitParticles(128, 2, 10.f, GTextureResources[L"../content/textures/snow.png"].m_id );
 
@@ -45,18 +45,23 @@ static void Map0()
 
 		SComponentHandle const transformHandle = pFloorEntity->AddComponent(EComponentType::CT_Transform);
 		SComponentHandle const staticMeshHandle = pFloorEntity->AddComponent(EComponentType::CT_StaticMesh);
+		SComponentHandle const rigidbodyHandle = pFloorEntity->AddComponent(EComponentType::CT_Rigidbody);
+
+		Quaternion rotation = Quaternion::IDENTITY;
+		Vec3 position(0.f, -2.f, 10.f);
+		Vec3 scale(10.f, 1.f, 10.f);
 
 		//transform
 		{
-			SComponentTransform& transformComponent = GComponentTransformManager.GetComponent(transformHandle);
-			transformComponent.m_position.Set(0.f, -2.f, 10.f);
-			transformComponent.m_scale.Set(10.f, 1.f, 10.f);
+			SComponentTransform& transformComponent = ComponentTransformManager::GetComponent(transformHandle);
+			transformComponent.m_position = position;
+			transformComponent.m_scale = scale;
 			transformComponent.m_rotation = Quaternion::IDENTITY;
 		}
 
 		//static mesh
 		{
-			SComponentStaticMesh& staticMeshComponent = GComponentStaticMeshManager.GetComponent(staticMeshHandle);
+			SComponentStaticMesh& staticMeshComponent = ComponentStaticMeshManager::GetComponent(staticMeshHandle);
 			staticMeshComponent.m_tiling.Set(10.f, 10.f);
 			staticMeshComponent.m_geometryID = GStaticGeometryResources["../content/models/box"].m_id;
 			staticMeshComponent.m_layer = RL_OPAQUE;
@@ -68,7 +73,124 @@ static void Map0()
 			staticMeshComponent.m_textureID[4] = GTextureResources[L"../content/textures/common/black.png"].m_id;
 		}
 
-		GComponentStaticMeshManager.RegisterRenderComponents(transformHandle, staticMeshHandle);
+		//rigidbody
+		{
+			PhysicsManager::PhysicsObjectDef physicsObjectDef;
+			physicsObjectDef.position = position;
+			physicsObjectDef.rotation = rotation;
+			physicsObjectDef.bodyDef.bodyType = PhysicsManager::PBT_Box;
+			physicsObjectDef.bodyDef.boxHalfExtents = scale;
+			physicsObjectDef.mass = 0.f;
+
+			SComponentRigidbody &rigidbodyComponent = ComponentRigidbodyManager::GetComponent(rigidbodyHandle);
+			rigidbodyComponent.bodyPtr = PhysicsManager::AddRigidbody(physicsObjectDef);
+		}
+
+		ComponentStaticMeshManager::RegisterRenderComponents(transformHandle, staticMeshHandle);
+	}
+
+	//rigid0 entity
+	{
+		UINT const entityID = GEntityManager.CreateEntity();
+		CEntity* const pEntity = GEntityManager.GetEntity(entityID);
+
+		SComponentHandle const transformHandle = pEntity->AddComponent(EComponentType::CT_Transform);
+		SComponentHandle const staticMeshHandle = pEntity->AddComponent(EComponentType::CT_StaticMesh);
+		SComponentHandle const rigidbodyHandle = pEntity->AddComponent(EComponentType::CT_Rigidbody);
+
+		Quaternion rotation = Quaternion::FromAxisAngle(Vec3(1.f,1.f,1.f).GetNormalized(), 45.f * MathConsts::DegToRad);
+		Vec3 position(0.f, 4.f, 5.f);
+		Vec3 scale(.5f, .5f, .5f);
+
+		//transform
+		{
+			SComponentTransform& transformComponent = ComponentTransformManager::GetComponent(transformHandle);
+			transformComponent.m_position = position;
+			transformComponent.m_scale = scale;
+			transformComponent.m_rotation = Quaternion::IDENTITY;
+		}
+
+		//static mesh
+		{
+			SComponentStaticMesh& staticMeshComponent = ComponentStaticMeshManager::GetComponent(staticMeshHandle);
+			staticMeshComponent.m_tiling.Set(1.f, 1.f);
+			staticMeshComponent.m_geometryID = GStaticGeometryResources["../content/models/box"].m_id;
+			staticMeshComponent.m_layer = RL_OPAQUE;
+			staticMeshComponent.m_shaderID = 0;
+			staticMeshComponent.m_textureID[0] = GTextureResources[L"../content/textures/pbr_test_b.dds"].m_id;
+			staticMeshComponent.m_textureID[1] = GTextureResources[L"../content/textures/pbr_test_n.dds"].m_id;
+			staticMeshComponent.m_textureID[2] = GTextureResources[L"../content/textures/pbr_test_r.dds"].m_id;
+			staticMeshComponent.m_textureID[3] = GTextureResources[L"../content/textures/pbr_test_m.dds"].m_id;
+			staticMeshComponent.m_textureID[4] = GTextureResources[L"../content/textures/common/black.png"].m_id;
+		}
+
+		//rigidbody
+		{
+			PhysicsManager::PhysicsObjectDef physicsObjectDef;
+			physicsObjectDef.position = position;
+			physicsObjectDef.rotation = rotation;
+			physicsObjectDef.bodyDef.bodyType = PhysicsManager::PBT_Box;
+			physicsObjectDef.bodyDef.boxHalfExtents = scale;
+			physicsObjectDef.mass = 1.f;
+
+			SComponentRigidbody &rigidbodyComponent = ComponentRigidbodyManager::GetComponent(rigidbodyHandle);
+			rigidbodyComponent.bodyPtr = PhysicsManager::AddRigidbody(physicsObjectDef);
+		}
+
+		ComponentStaticMeshManager::RegisterRenderComponents(transformHandle, staticMeshHandle);
+		ComponentRigidbodyManager::RegisterPhysicsComponents(transformHandle, rigidbodyHandle);
+	}
+
+	//rigid1 entity
+	{
+		UINT const entityID = GEntityManager.CreateEntity();
+		CEntity* const pEntity = GEntityManager.GetEntity(entityID);
+
+		SComponentHandle const transformHandle = pEntity->AddComponent(EComponentType::CT_Transform);
+		SComponentHandle const staticMeshHandle = pEntity->AddComponent(EComponentType::CT_StaticMesh);
+		SComponentHandle const rigidbodyHandle = pEntity->AddComponent(EComponentType::CT_Rigidbody);
+
+		Quaternion rotation = Quaternion::IDENTITY;
+		Vec3 position(0.f, 5.f, 5.f);
+		Vec3 scale(.5f, .5f, .5f);
+
+		//transform
+		{
+			SComponentTransform& transformComponent = ComponentTransformManager::GetComponent(transformHandle);
+			transformComponent.m_position = position;
+			transformComponent.m_scale = scale;
+			transformComponent.m_rotation = Quaternion::IDENTITY;
+		}
+
+		//static mesh
+		{
+			SComponentStaticMesh& staticMeshComponent = ComponentStaticMeshManager::GetComponent(staticMeshHandle);
+			staticMeshComponent.m_tiling.Set(1.f, 1.f);
+			staticMeshComponent.m_geometryID = GStaticGeometryResources["../content/models/sphere"].m_id;
+			staticMeshComponent.m_layer = RL_OPAQUE;
+			staticMeshComponent.m_shaderID = 0;
+			staticMeshComponent.m_textureID[0] = GTextureResources[L"../content/textures/pbr_test_b.dds"].m_id;
+			staticMeshComponent.m_textureID[1] = GTextureResources[L"../content/textures/pbr_test_n.dds"].m_id;
+			staticMeshComponent.m_textureID[2] = GTextureResources[L"../content/textures/pbr_test_r.dds"].m_id;
+			staticMeshComponent.m_textureID[3] = GTextureResources[L"../content/textures/pbr_test_m.dds"].m_id;
+			staticMeshComponent.m_textureID[4] = GTextureResources[L"../content/textures/common/black.png"].m_id;
+		}
+
+		//rigidbody
+		{
+			PhysicsManager::PhysicsObjectDef physicsObjectDef;
+			physicsObjectDef.position = position;
+			physicsObjectDef.rotation = rotation;
+			physicsObjectDef.bodyDef.bodyType = PhysicsManager::PBT_Sphere;
+			physicsObjectDef.bodyDef.sphereRadius = scale.x;
+			physicsObjectDef.mass = 1.f;
+
+			SComponentRigidbody &rigidbodyComponent = ComponentRigidbodyManager::GetComponent(rigidbodyHandle);
+			rigidbodyComponent.bodyPtr = PhysicsManager::AddRigidbody(physicsObjectDef);
+		}
+
+		ComponentStaticMeshManager::RegisterRenderComponents(transformHandle, staticMeshHandle);
+		ComponentRigidbodyManager::RegisterPhysicsComponents(transformHandle, rigidbodyHandle);
 	}
 
 	//light 0
@@ -82,7 +204,7 @@ static void Map0()
 
 		//transform
 		{
-			SComponentTransform& transformComponent = GComponentTransformManager.GetComponent(transformHandle);
+			SComponentTransform& transformComponent = ComponentTransformManager::GetComponent(transformHandle);
 			transformComponent.m_position.Set(-1.5f, 0.5f, 10.f);
 			transformComponent.m_scale.Set(1.f, 1.f, 1.f);
 			transformComponent.m_rotation = Quaternion::FromAxisAngle(Vec3::RIGHT.data, -90.f * MathConsts::DegToRad);
@@ -90,7 +212,7 @@ static void Map0()
 
 		//static mesh
 		{
-			SComponentStaticMesh& staticMeshComponent = GComponentStaticMeshManager.GetComponent(staticMeshHandle);
+			SComponentStaticMesh& staticMeshComponent = ComponentStaticMeshManager::GetComponent(staticMeshHandle);
 			staticMeshComponent.m_color.Set(1.f, 1.f, 1.f);
 			staticMeshComponent.m_tiling.Set(1.f, 1.f);
 			staticMeshComponent.m_geometryID = GStaticGeometryResources["../content/models/plane"].m_id;
@@ -101,14 +223,14 @@ static void Map0()
 
 		//light
 		{
-			SComponentLight& lightComponent = GComponentLightManager.GetComponent(lightHandle);
+			SComponentLight& lightComponent = ComponentLightManager::GetComponent(lightHandle);
 			lightComponent.m_color.Set(2.f, 2.f, 2.f);
 			lightComponent.m_textureID = 0;
 			lightComponent.m_lightShader = Byte(ELightFlags::LF_LTC);
 		}
 
-		GComponentStaticMeshManager.RegisterRenderComponents(transformHandle, staticMeshHandle);
-		GComponentLightManager.RegisterRenderComponents(transformHandle, lightHandle);
+		ComponentStaticMeshManager::RegisterRenderComponents(transformHandle, staticMeshHandle);
+		ComponentLightManager::RegisterRenderComponents(transformHandle, lightHandle);
 	}
 
 	//light 1 (texture)
@@ -122,7 +244,7 @@ static void Map0()
 
 		//transform
 		{
-			SComponentTransform& transformComponent = GComponentTransformManager.GetComponent(transformHandle);
+			SComponentTransform& transformComponent = ComponentTransformManager::GetComponent(transformHandle);
 			transformComponent.m_position.Set(5.5f, 0.5f, 10.f);
 			transformComponent.m_scale.Set(1.f, 1.f, 1.f);
 			transformComponent.m_rotation = Quaternion::FromAxisAngle(Vec3::RIGHT.data, -90.f * MathConsts::DegToRad);
@@ -130,7 +252,7 @@ static void Map0()
 
 		//static mesh
 		{
-			SComponentStaticMesh& staticMeshComponent = GComponentStaticMeshManager.GetComponent(staticMeshHandle);
+			SComponentStaticMesh& staticMeshComponent = ComponentStaticMeshManager::GetComponent(staticMeshHandle);
 			staticMeshComponent.m_color.Set(1.f, 1.f, 1.f);
 			staticMeshComponent.m_tiling.Set(1.f, 1.f);
 			staticMeshComponent.m_geometryID = GStaticGeometryResources["../content/models/plane"].m_id;
@@ -142,228 +264,37 @@ static void Map0()
 
 		//light
 		{
-			SComponentLight& lightComponent = GComponentLightManager.GetComponent(lightHandle);
+			SComponentLight& lightComponent = ComponentLightManager::GetComponent(lightHandle);
 			lightComponent.m_color.Set(2.f, 2.f, 2.f);
 			lightComponent.m_textureID = GTextureResources[L"../content/textures/stained_glass.ltc.dds"].m_id;
 			lightComponent.m_lightShader = Byte(ELightFlags::LF_LTC_TEXTURE);
 		}
 
-		GComponentStaticMeshManager.RegisterRenderComponents(transformHandle, staticMeshHandle);
-		GComponentLightManager.RegisterRenderComponents(transformHandle, lightHandle);
+		ComponentStaticMeshManager::RegisterRenderComponents(transformHandle, staticMeshHandle);
+		ComponentLightManager::RegisterRenderComponents(transformHandle, lightHandle);
 	}
 }
 
-
-static void Map1()
-{
-	GComponentLightManager.SetDirectLightColor(Vec3(0.7f, 0.7f, 0.7f));
-	GComponentLightManager.SetDirectLightDir(Vec3(0.f, 1.f, -1.f).GetNormalized());
-	GComponentLightManager.SetAmbientLightColor(Vec3(0.2f, 0.2f, 0.2f));
-
-	GEnvironmentParticleManager.InitParticles( 0, 2, 10.f, GTextureResources[L"../content/textures/snow.png"].m_id);
-
-	//sphereA
-	{
-		UINT const sphereEntityID = GEntityManager.CreateEntity();
-		CEntity* const pSphereEntity = GEntityManager.GetEntity(sphereEntityID);
-
-		SComponentHandle const transformHandle = pSphereEntity->AddComponent(EComponentType::CT_Transform);
-		SComponentHandle const staticMeshHandle = pSphereEntity->AddComponent(EComponentType::CT_StaticMesh);
-		SComponentHandle const physicHandle = pSphereEntity->AddComponent(EComponentType::CT_Physics);
-		SComponentHandle const physicTestHandle = pSphereEntity->AddComponent(EComponentType::CT_PhysicsTest);
-
-		//transform
-		{
-			SComponentTransform& transformComponent = GComponentTransformManager.GetComponent(transformHandle);
-			transformComponent.m_position.Set(-1.f, 0.f, 10.f);
-			transformComponent.m_scale.Set(1.f, 1.f, 1.f);
-			transformComponent.m_rotation = Quaternion::IDENTITY;
-		}
-
-		//static mesh
-		{
-			SComponentStaticMesh& staticMeshComponent = GComponentStaticMeshManager.GetComponent(staticMeshHandle);
-			staticMeshComponent.m_color.Set(.4f, 1.f, .4f);
-			staticMeshComponent.m_geometryID = GStaticGeometryResources["../content/models/sphere"].m_id;
-			staticMeshComponent.m_layer = RL_OPAQUE;
-			staticMeshComponent.m_shaderID = Byte(ST_OBJECT_DRAW_NO_TEXTURES);
-			memset(staticMeshComponent.m_textureID, 0, sizeof(staticMeshComponent.m_textureID));
-		}
-
-		//physic
-		{
-			SComponentPhysics &physicsComponent = GComponentPhysicsManager.GetComponent(physicHandle);
-			physicsComponent.m_radius = 1.f;
-			physicsComponent.m_colliderType = CT_Sphere;
-		}
-
-		//physicTest
-		{
-			SPhysicTestComponent &physicTestComponent = GComponentPhysicTestManager.GetComponent(physicTestHandle);
-			physicTestComponent.m_positionA.Set(-1.5f, 0.f, 9.5f);
-			physicTestComponent.m_positionB.Set(-0.5f, 0.f, 9.5f);
-		}
-
-		GComponentPhysicsManager.RegisterPhysicsComponents(transformHandle, physicHandle);
-		GComponentPhysicTestManager.RegisterPhysicTestComponents(transformHandle, physicHandle, staticMeshHandle, physicTestHandle);
-		GComponentStaticMeshManager.RegisterRenderComponents(transformHandle, staticMeshHandle);
-	}
-
-	//sphereB
-	{
-		UINT const sphereEntityID = GEntityManager.CreateEntity();
-		CEntity* const pSphereEntity = GEntityManager.GetEntity(sphereEntityID);
-
-		SComponentHandle const transformHandle = pSphereEntity->AddComponent(EComponentType::CT_Transform);
-		SComponentHandle const staticMeshHandle = pSphereEntity->AddComponent(EComponentType::CT_StaticMesh);
-		SComponentHandle const physicHandle = pSphereEntity->AddComponent(EComponentType::CT_Physics);
-		SComponentHandle const physicTestHandle = pSphereEntity->AddComponent(EComponentType::CT_PhysicsTest);
-
-		//transform
-		{
-			SComponentTransform& transformComponent = GComponentTransformManager.GetComponent(transformHandle);
-			transformComponent.m_position.Set(1.f, 0.f, 10.f);
-			transformComponent.m_scale.Set(1.f, 1.f, 1.f);
-			transformComponent.m_rotation = Quaternion::IDENTITY;
-		}
-
-		//static mesh
-		{
-			SComponentStaticMesh& staticMeshComponent = GComponentStaticMeshManager.GetComponent(staticMeshHandle);
-			staticMeshComponent.m_color.Set(.4f, 1.f, .4f);
-			staticMeshComponent.m_geometryID = GStaticGeometryResources["../content/models/sphere"].m_id;
-			staticMeshComponent.m_layer = RL_OPAQUE;
-			staticMeshComponent.m_shaderID = Byte(ST_OBJECT_DRAW_NO_TEXTURES);
-			memset(staticMeshComponent.m_textureID, 0, sizeof(staticMeshComponent.m_textureID));
-		}
-
-		//physic
-		{
-			SComponentPhysics &physicsComponent = GComponentPhysicsManager.GetComponent(physicHandle);
-			physicsComponent.m_radius = 1.f;
-			physicsComponent.m_colliderType = CT_Sphere;
-		}
-
-		//physicTest
-		{
-			SPhysicTestComponent &physicTestComponent = GComponentPhysicTestManager.GetComponent(physicTestHandle);
-			physicTestComponent.m_positionA.Set(1.5f, 0.f, 10.f);
-			physicTestComponent.m_positionB.Set(0.5f, 0.f, 10.f);
-		}
-
-		GComponentPhysicsManager.RegisterPhysicsComponents(transformHandle, physicHandle);
-		GComponentPhysicTestManager.RegisterPhysicTestComponents(transformHandle, physicHandle, staticMeshHandle, physicTestHandle);
-		GComponentStaticMeshManager.RegisterRenderComponents(transformHandle, staticMeshHandle);
-	}
-
-	//boxA
-	{
-		UINT const boxEntityID = GEntityManager.CreateEntity();
-		CEntity* const pBoxEntity = GEntityManager.GetEntity(boxEntityID);
-
-		SComponentHandle const transformHandle = pBoxEntity->AddComponent(EComponentType::CT_Transform);
-		SComponentHandle const staticMeshHandle = pBoxEntity->AddComponent(EComponentType::CT_StaticMesh);
-		SComponentHandle const physicHandle = pBoxEntity->AddComponent(EComponentType::CT_Physics);
-		SComponentHandle const physicTestHandle = pBoxEntity->AddComponent(EComponentType::CT_PhysicsTest);
-
-		//transform
-		{
-			SComponentTransform& transformComponent = GComponentTransformManager.GetComponent(transformHandle);
-			transformComponent.m_position.Set(0.f, 1.f, 10.f);
-			transformComponent.m_scale.Set(1.f, 1.f, 1.f);
-			
-			Vec3 rotationAxis(-1.f, 1.f, 0.f);
-			rotationAxis.Normalize();
-
-			transformComponent.m_rotation = Quaternion::FromAxisAngle(rotationAxis.data, 45.f);
-			transformComponent.m_rotation = Quaternion::IDENTITY;
-		}
-
-		//static mesh
-		{
-			SComponentStaticMesh& staticMeshComponent = GComponentStaticMeshManager.GetComponent(staticMeshHandle);
-			staticMeshComponent.m_color.Set(.4f, 1.f, .4f);
-			staticMeshComponent.m_geometryID = GStaticGeometryResources["../content/models/box"].m_id;
-			staticMeshComponent.m_layer = RL_OPAQUE;
-			staticMeshComponent.m_shaderID = Byte(ST_OBJECT_DRAW_NO_TEXTURES);
-			memset(staticMeshComponent.m_textureID, 0, sizeof(staticMeshComponent.m_textureID));
-		}
-
-		//physic
-		{
-			SComponentPhysics &physicsComponent = GComponentPhysicsManager.GetComponent(physicHandle);
-			physicsComponent.m_boxSides = Vec3::ONE;
-			physicsComponent.m_colliderType = CT_Box;
-		}
-
-		//physicTest
-		{
-			SPhysicTestComponent &physicTestComponent = GComponentPhysicTestManager.GetComponent(physicTestHandle);
-			physicTestComponent.m_positionA.Set(0.f, 5.f, 10.f);
-			physicTestComponent.m_positionB.Set(0.f, 0.f, 10.f);
-		}
-
-		GComponentPhysicsManager.RegisterPhysicsComponents(transformHandle, physicHandle);
-		GComponentPhysicTestManager.RegisterPhysicTestComponents(transformHandle, physicHandle, staticMeshHandle, physicTestHandle);
-		GComponentStaticMeshManager.RegisterRenderComponents(transformHandle, staticMeshHandle);
-	}
-
-	//boxB
-	{
-		UINT const boxEntityID = GEntityManager.CreateEntity();
-		CEntity* const pBoxEntity = GEntityManager.GetEntity(boxEntityID);
-
-		SComponentHandle const transformHandle = pBoxEntity->AddComponent(EComponentType::CT_Transform);
-		SComponentHandle const staticMeshHandle = pBoxEntity->AddComponent(EComponentType::CT_StaticMesh);
-		SComponentHandle const physicHandle = pBoxEntity->AddComponent(EComponentType::CT_Physics);
-		SComponentHandle const physicTestHandle = pBoxEntity->AddComponent(EComponentType::CT_PhysicsTest);
-
-		//transform
-		{
-			SComponentTransform& transformComponent = GComponentTransformManager.GetComponent(transformHandle);
-			transformComponent.m_position.Set(2.5f, 1.f, 10.f);
-			transformComponent.m_scale.Set(1.f, 1.f, 1.f);
-
-			Vec3 rotationAxis( -1.f, 1.f, 0.f );
-			rotationAxis.Normalize();
-
-			transformComponent.m_rotation = Quaternion::FromAxisAngle(rotationAxis.data, 45.f );
-			//transformComponent.m_rotation = Quaternion::IDENTITY;
-		}
-
-		//static mesh
-		{
-			SComponentStaticMesh& staticMeshComponent = GComponentStaticMeshManager.GetComponent(staticMeshHandle);
-			staticMeshComponent.m_color.Set(.4f, 1.f, .4f);
-			staticMeshComponent.m_geometryID = GStaticGeometryResources["../content/models/box"].m_id;
-			staticMeshComponent.m_layer = RL_OPAQUE;
-			staticMeshComponent.m_shaderID = Byte(ST_OBJECT_DRAW_NO_TEXTURES);
-			memset(staticMeshComponent.m_textureID, 0, sizeof(staticMeshComponent.m_textureID));
-		}
-
-		//physic
-		{
-			SComponentPhysics &physicsComponent = GComponentPhysicsManager.GetComponent(physicHandle);
-			physicsComponent.m_boxSides = Vec3::ONE;
-			physicsComponent.m_colliderType = CT_Box;
-		}
-
-		//physicTest
-		{
-			SPhysicTestComponent &physicTestComponent = GComponentPhysicTestManager.GetComponent(physicTestHandle);
-			physicTestComponent.m_positionA.Set(2.1f, 5.f, 10.f);
-			physicTestComponent.m_positionB.Set(2.1f, 5.f, 10.f);
-		}
-
-		GComponentPhysicsManager.RegisterPhysicsComponents(transformHandle, physicHandle);
-		GComponentPhysicTestManager.RegisterPhysicTestComponents(transformHandle, physicHandle, staticMeshHandle, physicTestHandle);
-		GComponentStaticMeshManager.RegisterRenderComponents(transformHandle, staticMeshHandle);
-	}
-}
-
+extern AddComponentFunc AddComponentFuncPtr[CT_Num];
+extern RemoveComponentFunc RemoveComponentFuncPtr[CT_Num];
 
 void InitGame()
 {
+	memset(AddComponentFuncPtr, 0, sizeof(AddComponentFuncPtr));
+	memset(RemoveComponentFuncPtr, 0, sizeof(RemoveComponentFuncPtr));
+
+	AddComponentFuncPtr[CT_Transform] = ComponentTransformManager::AddComponent;
+	AddComponentFuncPtr[CT_StaticMesh] = ComponentStaticMeshManager::AddComponent;
+	AddComponentFuncPtr[CT_Light] = ComponentLightManager::AddComponent;
+	AddComponentFuncPtr[CT_Camera] = ComponentCameraManager::AddComponent;
+	AddComponentFuncPtr[CT_Rigidbody] = ComponentRigidbodyManager::AddComponent;
+
+	RemoveComponentFuncPtr[CT_Transform] = ComponentTransformManager::RemoveComponent;
+	RemoveComponentFuncPtr[CT_StaticMesh] = ComponentStaticMeshManager::RemoveComponent;
+	RemoveComponentFuncPtr[CT_Light] = ComponentLightManager::RemoveComponent;
+	RemoveComponentFuncPtr[CT_Camera] = ComponentCameraManager::RemoveComponent;
+	RemoveComponentFuncPtr[CT_Rigidbody] = ComponentRigidbodyManager::RemoveComponent;
+
 	GEntityManager.Clear();
 
 	//camera entity
@@ -371,15 +302,15 @@ void InitGame()
 		UINT const cameraEntityID = GEntityManager.CreateEntity();
 		CEntity* const pCameraEntity = GEntityManager.GetEntity( cameraEntityID );
 		SComponentHandle const cameraHandle = pCameraEntity->AddComponent( EComponentType::CT_Camera );
-		SComponentCamera& cameraComponent = GComponentCameraManager.GetComponent( cameraHandle );
-		GComponentCameraManager.SetMainCamera( cameraHandle );
-		GComponentCameraManager.SetMainProjection( Matrix4x4::Projection( 40.f, 1.f, 0.01f, 100000.f ) );
+		SComponentCamera& cameraComponent = ComponentCameraManager::GetComponent( cameraHandle );
+		ComponentCameraManager::SetMainCamera( cameraHandle );
+		ComponentCameraManager::SetMainProjection( Matrix4x4::Projection( 40.f, 1.f, 0.01f, 100000.f ) );
 		cameraComponent.m_position = Vec3::ZERO;
 		cameraComponent.m_rotation = Quaternion::IDENTITY;
 	}
 
-	//Map0();
-	Map1();
+	Map0();
+	//Map1();
 }
 
 void DrawDebugInfo()
@@ -442,6 +373,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
 	GInputManager.Init();
 	GInputManager.AddObserver(&GSystemInput);
 
+	PhysicsManager::Init();
+
 	InitGame();
 
 	char const* sounds[] =
@@ -494,14 +427,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
 			}
 		}
 
-		GComponentCameraManager.MainCameraTick();
-		GComponentPhysicsManager.PhysicTick();
-		GComponentPhysicTestManager.PhysicTestUpdate();
-
-		if ( GInputManager.KeyDownLastFrame( K_F5 ) )
+		if (GInputManager.KeyDownLastFrame(K_F5))
 		{
 			GRender.ReinitShaders();
 		}
+
+		PhysicsManager::Tick();
+		ComponentRigidbodyManager::SyncTransformsWithPhysics();
+		ComponentCameraManager::MainCameraTick();
+		
 		GInputManager.Tick();
 
 		//DrawDebugInfo();
@@ -512,6 +446,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
 		GEntityManager.Tick();
 	}
 
+	PhysicsManager::Release();
 	GRender.Release();
 	GSoundEngine.Release();
 	GGeometryLoader.Release();

@@ -896,7 +896,7 @@ void CRender::DrawDebug( ID3D12GraphicsCommandList* commandList )
 
 void CRender::PrepareView()
 {
-	SComponentCamera mainCamera = GComponentCameraManager.GetMainCamera();
+	SComponentCamera mainCamera = ComponentCameraManager::GetMainCamera();
 	SCameraMatrices& cameraMatrices = GViewObject.m_camera;
 
 	cameraMatrices.m_viewToScreen = mainCamera.m_projectionMatrix;
@@ -938,7 +938,7 @@ void CRender::PrepareGlobalConstBuffer()
 	memcpy( globalCB.m_viewToWorld, &tViewToWorld, 3 * sizeof( Vec4 ) );
 
 	globalCB.m_perspectiveValues.Set(1.f / cameraMatrices.m_viewToScreen.m_a00, 1.f / cameraMatrices.m_viewToScreen.m_a11, cameraMatrices.m_viewToScreen.m_a32, -cameraMatrices.m_viewToScreen.m_a22 );
-	globalCB.m_cameraPositionWS = GComponentCameraManager.GetMainCameraPosition();
+	globalCB.m_cameraPositionWS = ComponentCameraManager::GetMainCameraPosition();
 	globalCB.m_deltaTime = GTimer.GameDelta();
 	globalCB.m_time = GTimer.GetSeconds( GTimer.TimeFromStart() );
 
@@ -950,9 +950,9 @@ void CRender::PreDrawFrame()
 	PrepareView();
 	PrepareGlobalConstBuffer();
 
-	GComponentStaticMeshManager.FillRenderData();
-	GComponentStaticMeshManager.FillEnviroParticleRenderData();
-	GComponentLightManager.FillRenderData();
+	ComponentStaticMeshManager::FillRenderData();
+	ComponentStaticMeshManager::FillEnviroParticleRenderData();
+	ComponentLightManager::FillRenderData();
 	GEnvironmentParticleManager.FillRenderData();
 	GTextRenderManager.FillRenderData();
 	GDynamicGeometryManager.PreDraw();

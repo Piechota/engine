@@ -24,6 +24,7 @@
 
 #include <stdarg.h>
 
+#include "physics\physicsManager.h"
 #include "viewObject.h"
 #include "components\components.h"
 #include "entity.h"

@@ -8,6 +8,7 @@ struct SComponentTransform
 };
 POD_TYPE( SComponentTransform )
 
-
-class CComponentTransformManager : public TComponentContainer< SComponentTransform, EComponentType::CT_Transform >
-{};
+namespace ComponentTransformManager
+{
+	DECLARE_COMPONENT(SComponentTransform)
+}

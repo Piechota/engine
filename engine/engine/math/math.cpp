@@ -5,10 +5,10 @@ Matrix4x4 Matrix4x4::GetTranslateRotationSize( Vec3 const& translate, Quaternion
 	Matrix4x4 const rotationM = rotation.ToMatrix4x4();
 	Matrix4x4 const translateScale
 	(
-		scale.x,	0.f,		0.f,		0.f,
-		0.f,		scale.y,	0.f,		0.f,
-		0.f,		0.f,		scale.z,	0.f,
-		translate.x,		translate.y,		translate.z,		1.f
+		scale.x,		0.f,			0.f,			0.f,
+		0.f,			scale.y,		0.f,			0.f,
+		0.f,			0.f,			scale.z,		0.f,
+		translate.x,	translate.y,	translate.z,	1.f
 	);
 	return Math::Mul( rotationM, translateScale );
 }

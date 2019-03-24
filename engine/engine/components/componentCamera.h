@@ -8,20 +8,14 @@ struct SComponentCamera
 };
 POD_TYPE( SComponentCamera )
 
-class CComponentCameraManager : public TComponentContainer< SComponentCamera, EComponentType::CT_Camera>
+namespace ComponentCameraManager
 {
-private:
-	UINT m_graphicsCameraID;
+	DECLARE_COMPONENT(SComponentCamera)
+	extern void SetMainCamera(SComponentHandle const cameraHandle);
 
-public:
-	void SetMainCamera( SComponentHandle const cameraHandle )
-	{
-		m_graphicsCameraID = cameraHandle.m_index;
-	}
-
-	Vec3 GetMainCameraPosition() const;
-	Vec3 GetMainCameraForward() const;
-	SComponentCamera GetMainCamera() const { return m_components[ m_graphicsCameraID ]; }
-	void MainCameraTick();
-	void SetMainProjection( Matrix4x4 const& projection );
-};
+	extern Vec3 GetMainCameraPosition();
+	extern Vec3 GetMainCameraForward();
+	extern SComponentCamera GetMainCamera();
+	extern void MainCameraTick();
+	extern void SetMainProjection(Matrix4x4 const& projection);
+}

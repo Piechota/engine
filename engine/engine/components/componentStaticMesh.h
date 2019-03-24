@@ -23,25 +23,11 @@ struct SComponentStaticMesh
 };
 POD_TYPE( SComponentStaticMesh )
 
-
-class CComponentStaticMeshManager : public TComponentContainer< SComponentStaticMesh, EComponentType::CT_StaticMesh >
+namespace ComponentStaticMeshManager
 {
-private:
-	struct SRenderComponents
-	{
-		UINT32 m_transformID;
-		UINT32 m_staticMeshID;
-	};
-	TArray< SRenderComponents > m_renderComponents;
+	DECLARE_COMPONENT(SComponentStaticMesh)
 
-public:
-	void RegisterRenderComponents( SComponentHandle const transformHandle, SComponentHandle const staticMeshHandle )
-	{
-		ASSERT( transformHandle.m_type == EComponentType::CT_Transform );
-		ASSERT( staticMeshHandle.m_type == EComponentType::CT_StaticMesh );
-		m_renderComponents.Add( { transformHandle.m_index, staticMeshHandle.m_index } );
-	}
-
-	void FillRenderData() const;
-	void FillEnviroParticleRenderData() const;
-};
+	extern void RegisterRenderComponents(SComponentHandle const transformHandle, SComponentHandle const staticMeshHandle);
+	extern void FillRenderData();
+	extern void FillEnviroParticleRenderData();
+}

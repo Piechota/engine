@@ -122,12 +122,23 @@ struct Quaternion
 		return q;
 	}
 
-	static Quaternion FromAxisAngle(float const* axis, float const angle)
+	static Quaternion FromAxisAngle(float const axisX, float const axisY, float const axisZ, float const angle)
 	{
 		float const halfAngle = 0.5f * angle;
 		float const sinA = sinf(halfAngle);
-		return Normalize( Quaternion(axis[0] * sinA, axis[1] * sinA, axis[2] * sinA, cosf(halfAngle)) );
+		return Normalize(Quaternion(axisX * sinA, axisY * sinA, axisZ * sinA, cosf(halfAngle)));
 	}
+
+	static Quaternion FromAxisAngle(float const* axis, float const angle)
+	{
+		return FromAxisAngle(axis[0], axis[1], axis[2], angle);
+	}
+
+	static Quaternion FromAxisAngle(Vec3 const &axis, float const angle)
+	{
+		return FromAxisAngle(axis.x, axis.y, axis.z, angle);
+	}
+
 
 	static Quaternion const IDENTITY;
 };

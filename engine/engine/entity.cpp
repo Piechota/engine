@@ -1,58 +1,36 @@
 #include "headers.h"
 
+AddComponentFunc AddComponentFuncPtr[CT_Num];
+RemoveComponentFunc RemoveComponentFuncPtr[CT_Num];
+
 void CEntity::Destroy()
 {
 	UINT const componentsNum = m_components.Size();
 	for ( UINT i = 0; i < componentsNum; ++i )
 	{
 		SComponentHandle const handle = m_components[ i ];
-		switch ( handle.m_type )
+
+		if (handle.m_type >= CT_Num || handle.m_type == CT_INVALID)
 		{
-			case EComponentType::CT_Transform:
-				GComponentTransformManager.RemoveComponent( handle );
-				break;
-			case EComponentType::CT_StaticMesh:
-				GComponentStaticMeshManager.RemoveComponent( handle );
-				break;
-			case EComponentType::CT_Light:
-				GComponentLightManager.RemoveComponent( handle );
-				break;
-			case EComponentType::CT_Camera:
-				GComponentCameraManager.RemoveComponent( handle );
-				break;
-			case EComponentType::CT_Physics:
-				GComponentPhysicsManager.RemoveComponent(handle);
-				break;
-			case EComponentType::CT_PhysicsTest:
-				GComponentPhysicTestManager.RemoveComponent(handle);
-				break;
-			default:
-				ASSERT_STR( false, "Missing component type" );
-				break;
+			ASSERT_STR(false, "Missing component type");
+			break;
 		}
+
+		ASSERT_STR(RemoveComponentFuncPtr[handle.m_type], "RemoveComponent not set");
+		RemoveComponentFuncPtr[handle.m_type](handle);
 	}
 }
 
 SComponentHandle CEntity::AddComponent( EComponentType const type )
 {
-	switch ( type )
+	if (type >= CT_Num || type == CT_INVALID)
 	{
-		case EComponentType::CT_Transform:
-			return GComponentTransformManager.AddComponent();
-		case EComponentType::CT_StaticMesh:
-			return GComponentStaticMeshManager.AddComponent();
-		case EComponentType::CT_Light:
-			return GComponentLightManager.AddComponent();
-		case EComponentType::CT_Camera:
-			return GComponentCameraManager.AddComponent();
-		case EComponentType::CT_Physics:
-			return GComponentPhysicsManager.AddComponent();
-		case EComponentType::CT_PhysicsTest:
-			return GComponentPhysicTestManager.AddComponent();
-		default:
-			ASSERT_STR( false, "Missing component type" );
-			return SComponentHandle{ 0, 0 };
+		ASSERT_STR(false, "Missing component type");
+		return SComponentHandle{ 0, 0 };
 	}
+
+	ASSERT_STR(AddComponentFuncPtr[type], "AddComponent not set");
+	return AddComponentFuncPtr[type]();
 }
 
 SComponentHandle CEntity::GetComponent( EComponentType const type ) const
